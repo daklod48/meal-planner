@@ -20,10 +20,9 @@ import re
 import sys
 from datetime import date, timedelta
 
-VERSION = '1.1'
+VERSION = '1.2'  # 1.2 (2026-11-05): targets from the DRI (protein RDA, energy EER) instead of fixed 1.6 g/kg and Mifflin x PAL
 EPS = 1e-12
 PAL = {'light': 1.53, 'active': 1.76, 'vigorous': 2.25}  # FAO/WHO/UNU (2004) Table 5.1 means
-DEFAULT_PROTEIN_G_PER_KG = 1.6  # Iraki et al. (2019) 1.6-2.2; Morton et al. (2018) plateau 1.62
 DEFAULT_WEIGHTS = {'price': 40, 'speed': 30, 'taste': 20, 'time': 10}
 
 
@@ -70,7 +69,104 @@ def bmr(sex, kg, cm, age):
     return 10 * kg + 6.25 * cm - 5 * age + (-161 if sex == 'f' else 5)
 
 
+# Dietary Reference Intakes (DRI): Institute of Medicine (2005), https://doi.org/10.17226/10490; protein row of
+# https://www.ncbi.nlm.nih.gov/books/NBK56068/table/summarytables.t4/ . JS twin: DRI in app/js/planner.js (same numbers).
+DRI = {
+    'version': '2005',
+    'protein_g_per_kg': [[1, 3, 1.05], [4, 8, 0.95], [9, 13, 0.95], [14, 18, 0.85], [19, 200, 0.8]],
+    'protein_pregnancy': 1.1, 'protein_lactation': 1.3,
+    'pa_limits': [1.4, 1.6, 1.9],
+    'pa_coef': {'boy': [1.00, 1.13, 1.26, 1.42], 'girl': [1.00, 1.16, 1.31, 1.56], 'man': [1.00, 1.11, 1.25, 1.48], 'woman': [1.00, 1.12, 1.27, 1.45]},
+    'pregnancy_add_kcal': {'1': 0, '2': 340, '3': 452},
+    'lactation_add_kcal': {'0-6': 330, '7-12': 400},
+}
+PA_LEVELS = ['sedentary', 'low', 'active', 'very']
+
+
+def pa_level(pal):
+    for i, lim in enumerate(DRI['pa_limits']):
+        if pal < lim - EPS:
+            return i
+    return 3
+
+
+def age_group(age):
+    for g in DRI['protein_g_per_kg']:
+        if g[0] <= age <= g[1]:
+            return g
+    return None
+
+
+def eer_base(sex, age, w, hm, lvl):
+    if age <= 2:
+        return {'kcal': 89 * w - 100 + 20, 'coef': None, 'who': 'toddler'}
+    who = ('girl' if sex == 'f' else 'boy') if age <= 18 else ('woman' if sex == 'f' else 'man')
+    pa = DRI['pa_coef'][who][lvl]
+    if who == 'boy':
+        k = 88.5 - 61.9 * age + pa * (26.7 * w + 903 * hm) + (20 if age <= 8 else 25)
+    elif who == 'girl':
+        k = 135.3 - 30.8 * age + pa * (10.0 * w + 934 * hm) + (20 if age <= 8 else 25)
+    elif who == 'man':
+        k = 662 - 9.53 * age + pa * (15.91 * w + 539.6 * hm)
+    else:
+        k = 354 - 6.91 * age + pa * (9.36 * w + 726 * hm)
+    return {'kcal': k, 'coef': pa, 'who': who}
+
+
+def dri(body, w, h, age, sex, pal_given):
+    stage = body.get('life_stage') if body.get('life_stage') in ('pregnant', 'lactating') else 'none'
+    if sex != 'f':
+        stage = 'none'
+    out = {'version': DRI['version'], 'life_stage': stage, 'missing': []}
+    g = age_group(age)
+    if not g:
+        out['missing'].append('age_under_1' if age is not None and age < 1 else 'birth_date')
+        return out
+    out['age_group'] = '%d+' % g[0] if g[1] >= 200 else '%d-%d' % (g[0], g[1])
+    lvl = pa_level(PAL['light'] if pal_given is None else pal_given)
+    out['pa_level'] = PA_LEVELS[lvl]
+    out['activity_given'] = pal_given is not None
+    gpk = g[2]
+    add = 0
+    if stage == 'pregnant':
+        gpk = DRI['protein_pregnancy']
+        t = body.get('trimester')
+        tri = '' if t is None else _jsstr(t)
+        if tri not in DRI['pregnancy_add_kcal']:
+            out['missing'].append('trimester')
+        else:
+            add = DRI['pregnancy_add_kcal'][tri]
+            out['trimester'] = int(tri)
+    elif stage == 'lactating':
+        gpk = DRI['protein_lactation']
+        lp = str(body.get('lactation_period') or '')
+        if lp not in DRI['lactation_add_kcal']:
+            out['missing'].append('lactation_period')
+        else:
+            add = DRI['lactation_add_kcal'][lp]
+            out['lactation_period'] = lp
+    out['protein_g_per_kg'] = gpk
+    out['protein_g'] = r(w * gpk, 2)
+    e = eer_base(sex, age, w, h / 100, lvl)
+    out['eer_group'] = e['who']
+    out['pa_coef'] = e['coef']
+    out['stage_add_kcal'] = add
+    out['eer_kcal'] = r(e['kcal'] + add, 2)
+    return out
+
+
+def _jsstr(v):
+    """String(v) as JavaScript writes it (2.0 -> '2', True -> 'true')."""
+    if isinstance(v, bool):
+        return 'true' if v else 'false'
+    if isinstance(v, float) and v.is_integer():
+        return str(int(v))
+    return str(v)
+
+
 def targets(profile, weight_kg, as_of):
+    """Protein: the DRI for this body unless the person typed their own g/kg (no fixed minimum).
+    Energy to keep the weight: the DRI EER; bmr (Mifflin et al., 1990) is kept as an extra line."""
     profile = profile or {}
     body = profile.get('body') or {}
     goal = profile.get('goal') or {}
@@ -88,17 +184,20 @@ def targets(profile, weight_kg, as_of):
         out['missing'].append('birth_date')
     if sex not in ('m', 'f'):
         out['missing'].append('sex')
-    pal = num(act.get('pal'))
-    if pal is None:
-        pal = PAL['light']
+    pal_given = num(act.get('pal'))
+    pal = PAL['light'] if pal_given is None else pal_given
     out['pal'] = pal
     out['age'] = age
     maint = None
+    d = None
     if not out['missing']:
-        b = bmr(sex, w, h, age)
-        maint = b * pal
-        out['bmr'] = r(b, 2)
-        out['maintenance_kcal'] = r(maint, 2)
+        out['bmr'] = r(bmr(sex, w, h, age), 2)
+        d = dri(body, w, h, age, sex, pal_given)
+        out['dri'] = d
+        out['missing'].extend(d['missing'])
+        if not d['missing']:
+            maint = d['eer_kcal']
+            out['maintenance_kcal'] = d['eer_kcal']
     if out['mode'] == 'typed':
         tp = num(goal.get('typed_protein_g'))
         tk = num(goal.get('typed_kcal'))
@@ -111,15 +210,20 @@ def targets(profile, weight_kg, as_of):
         out['kcal'] = r(tk, 2)
         if w is not None and w > 0 and tp is not None:
             out['protein_g_per_kg'] = r(tp / w, 2)
+        if d and 'protein_g' in d and tp is not None and tp < d['protein_g'] - EPS:
+            out['warnings'].append('protein_below_dri')
         out['ok'] = not out['missing']
         return out
-    gpk = num(goal.get('protein_g_per_kg'))
-    if gpk is None:
-        gpk = DEFAULT_PROTEIN_G_PER_KG
-    out['protein_g_per_kg'] = gpk
-    if gpk < 1.6:
-        out['warnings'].append('protein_below_1_6')
-    if gpk > 2.2:
+    own = num(goal.get('protein_g_per_kg'))
+    gpk = own
+    out['protein_basis'] = 'dri' if own is None else 'own'
+    if own is None and d and 'protein_g_per_kg' in d:
+        gpk = d['protein_g_per_kg']
+    if gpk is not None:
+        out['protein_g_per_kg'] = gpk
+    if own is not None and d and 'protein_g_per_kg' in d and own < d['protein_g_per_kg'] - EPS:
+        out['warnings'].append('protein_below_dri')
+    if gpk is not None and gpk > 2.2:
         out['warnings'].append('protein_above_2_2')
     if out['mode'] == 'gain':
         gk = num(goal.get('gain_kg'))
@@ -131,6 +235,8 @@ def targets(profile, weight_kg, as_of):
         if out['missing']:
             out['ok'] = False
             return out
+        if age < 19 or d['life_stage'] != 'none':
+            out['warnings'].append('gain_life_stage')
         rate = gk / wk
         rate_pct = rate / w * 100
         auto = clamp(10 + (rate_pct - 0.25) * 40, 10, 20)

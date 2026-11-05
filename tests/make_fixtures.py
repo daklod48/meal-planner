@@ -66,6 +66,31 @@ cases.append({'fn': 'score', 'args': [[odd[1], odd[3]], {'targets': {'protein_g'
 cases.append({'fn': 'effectivePrice', 'args': [dict(billa, loyalty=[{'card': 'billa-club', 'price': 0}]), ['billa-club']]})
 cases.append({'fn': 'basket', 'args': [[tvaroh, {'name': 'no id', 'price': 10, 'pack_g': 100, 'per100g': {'protein': 30, 'kcal': 100}}], {'protein_g': 100, 'kcal': 500}, []]})
 cases.append({'fn': 'targets', 'args': [dict(prof, goal={'type': 'gain', 'gain_kg': True, 'weeks': '12'}), '68.4', '2026-10-19']})
+# 2026-11-05 (planner 1.2): DRI targets. Appended AFTER the seeded cases above, so the first 324 cases are unchanged.
+# Every DRI age group, both sexes, the four activity categories and their edges, pregnancy, lactation, missing parts.
+def body(sex, birth, cm, **kw):
+    b = {'sex': sex, 'birth_date': birth, 'height_cm': cm}
+    b.update(kw)
+    return b
+for sex in ('m', 'f'):
+    for birth, cm, kg in (('2024-06-01', 88, 12.5), ('2021-01-10', 105, 17), ('2018-03-03', 122, 24), ('2014-09-09', 150, 41),
+                          ('2010-02-02', 172, 60), ('1995-07-07', 180, 75), ('1950-01-01', 168, 70)):
+        for pal in (None, 1.39, 1.4, 1.53, 1.6, 1.76, 1.9, 2.25):
+            pr = {'body': body(sex, birth, cm), 'goal': {'type': 'maintain'}}
+            if pal is not None:
+                pr['activity'] = {'pal': pal}
+            cases.append({'fn': 'targets', 'args': [pr, kg, '2026-11-05']})
+for tri in (1, 2, 3, '2', 2.0, None, 4):
+    cases.append({'fn': 'targets', 'args': [{'body': body('f', '1996-04-04', 165, life_stage='pregnant', trimester=tri), 'goal': {'type': 'maintain'}}, 62, '2026-11-05']})
+for lp in ('0-6', '7-12', None, '13-18'):
+    cases.append({'fn': 'targets', 'args': [{'body': body('f', '2009-04-04', 160, life_stage='lactating', lactation_period=lp), 'activity': {'pal': 1.76}, 'goal': {'type': 'maintain'}}, 55, '2026-11-05']})
+cases.append({'fn': 'targets', 'args': [{'body': body('m', '1996-04-04', 180, life_stage='pregnant', trimester=2), 'goal': {'type': 'maintain'}}, 80, '2026-11-05']})
+cases.append({'fn': 'targets', 'args': [{'body': body('f', '2026-03-01', 60), 'goal': {'type': 'maintain'}}, 6, '2026-11-05']})
+cases.append({'fn': 'targets', 'args': [{'body': body('m', '1996-04-04', 180), 'goal': {'type': 'gain', 'gain_kg': 3, 'weeks': 12, 'protein_g_per_kg': 0.7}}, 80, '2026-11-05']})
+cases.append({'fn': 'targets', 'args': [{'body': body('m', '1996-04-04', 180), 'goal': {'type': 'gain', 'gain_kg': 3, 'weeks': 12, 'protein_g_per_kg': 2.4}}, 80, '2026-11-05']})
+cases.append({'fn': 'targets', 'args': [{'body': body('m', '2010-04-04', 170), 'goal': {'type': 'gain', 'gain_kg': 2, 'weeks': 10}}, 58, '2026-11-05']})
+cases.append({'fn': 'targets', 'args': [{'body': body('f', '1996-04-04', 165, life_stage='lactating', lactation_period='0-6'), 'goal': {'type': 'typed', 'typed_protein_g': 60, 'typed_kcal': 2400}}, 62, '2026-11-05']})
+cases.append({'fn': 'targets', 'args': [{'body': body('f', '1996-04-04', 165, life_stage='other'), 'goal': {'type': 'maintain'}}, 62, '2026-11-05']})
 p = os.path.join(os.path.dirname(__file__), 'fixtures', 'formulas.json')
 json.dump(cases, open(p, 'w'), ensure_ascii=False)
 print(len(cases), 'cases ->', p)

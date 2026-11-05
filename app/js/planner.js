@@ -6,7 +6,7 @@
   else root.MPPlanner = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  var VERSION = '1.1';
+  var VERSION = '1.2';  // 1.2 (2026-11-05): targets from the DRI (protein RDA, energy EER) instead of fixed 1.6 g/kg and Mifflin x PAL
   var EPS = 1e-12;
 
   // Round half away from zero to d decimals. Python twin: r(x, d).
@@ -38,15 +38,81 @@
     return 10 * kg + 6.25 * cm - 5 * age + (sex === 'f' ? -161 : 5);
   }
 
-  // Activity levels: mean PAL of FAO/WHO/UNU (2004) Table 5.1.
+  // Activity levels: mean PAL of FAO/WHO/UNU (2004) Table 5.1 (the three choices of the profile form).
   var PAL = { light: 1.53, active: 1.76, vigorous: 2.25 };
-  var DEFAULT_PROTEIN_G_PER_KG = 1.6;  // Iraki et al. (2019) 1.6-2.2; Morton et al. (2018) no extra gain above 1.62
   var DEFAULT_WEIGHTS = { price: 40, speed: 30, taste: 20, time: 10 };
 
+  /* Dietary Reference Intakes (DRI). Institute of Medicine (2005), Dietary Reference Intakes for Energy, Carbohydrate,
+     Fiber, Fat, Fatty Acids, Cholesterol, Protein, and Amino Acids, https://doi.org/10.17226/10490; protein row of the
+     DRI summary table https://www.ncbi.nlm.nih.gov/books/NBK56068/table/summarytables.t4/ . Python twin: DRI in planner.py.
+     Protein = Recommended Dietary Allowance (RDA) in g per kg body weight a day, by life stage.
+     Energy = Estimated Energy Requirement (EER) equations, height in metres; PA = physical activity coefficient. */
+  var DRI = {
+    version: '2005',
+    protein_g_per_kg: [[1, 3, 1.05], [4, 8, 0.95], [9, 13, 0.95], [14, 18, 0.85], [19, 200, 0.8]],
+    protein_pregnancy: 1.1, protein_lactation: 1.3,
+    // physical activity level (PAL) limits of the four DRI categories: sedentary < 1.4 <= low active < 1.6 <= active < 1.9 <= very active
+    pa_limits: [1.4, 1.6, 1.9],
+    pa_coef: { boy: [1.00, 1.13, 1.26, 1.42], girl: [1.00, 1.16, 1.31, 1.56], man: [1.00, 1.11, 1.25, 1.48], woman: [1.00, 1.12, 1.27, 1.45] },
+    pregnancy_add_kcal: { '1': 0, '2': 340, '3': 452 },
+    lactation_add_kcal: { '0-6': 330, '7-12': 400 }
+  };
+  var PA_LEVELS = ['sedentary', 'low', 'active', 'very'];
+  function paLevel(pal) {
+    var i; for (i = 0; i < DRI.pa_limits.length; i++) if (pal < DRI.pa_limits[i] - EPS) return i;
+    return 3;
+  }
+  function ageGroup(age) {
+    var i, g = DRI.protein_g_per_kg;
+    for (i = 0; i < g.length; i++) if (age >= g[i][0] && age <= g[i][1]) return g[i];
+    return null;
+  }
+  // EER without the pregnancy or lactation addition. hm = height in metres.
+  function eerBase(sex, age, w, hm, lvl) {
+    if (age <= 2) return { kcal: 89 * w - 100 + 20, coef: null, who: 'toddler' };
+    var who = age <= 18 ? (sex === 'f' ? 'girl' : 'boy') : (sex === 'f' ? 'woman' : 'man');
+    var pa = DRI.pa_coef[who][lvl], k;
+    if (who === 'boy') k = 88.5 - 61.9 * age + pa * (26.7 * w + 903 * hm) + (age <= 8 ? 20 : 25);
+    else if (who === 'girl') k = 135.3 - 30.8 * age + pa * (10.0 * w + 934 * hm) + (age <= 8 ? 20 : 25);
+    else if (who === 'man') k = 662 - 9.53 * age + pa * (15.91 * w + 539.6 * hm);
+    else k = 354 - 6.91 * age + pa * (9.36 * w + 726 * hm);
+    return { kcal: k, coef: pa, who: who };
+  }
+  /* The DRI block of a profile: protein and energy a day for this body, with the life stage and activity used. */
+  function dri(body, w, h, age, sex, palGiven) {
+    var stage = body.life_stage === 'pregnant' || body.life_stage === 'lactating' ? body.life_stage : 'none';
+    if (sex !== 'f') stage = 'none';
+    var out = { version: DRI.version, life_stage: stage, missing: [] };
+    var g = ageGroup(age);
+    if (!g) { out.missing.push(age !== null && age < 1 ? 'age_under_1' : 'birth_date'); return out; }
+    out.age_group = g[1] >= 200 ? g[0] + '+' : g[0] + '-' + g[1];
+    var lvl = paLevel(palGiven === null ? PAL.light : palGiven);
+    out.pa_level = PA_LEVELS[lvl]; out.activity_given = palGiven !== null;
+    var gpk = g[2], add = 0;
+    if (stage === 'pregnant') {
+      gpk = DRI.protein_pregnancy;
+      var tri = String(body.trimester === undefined || body.trimester === null ? '' : body.trimester);
+      if (DRI.pregnancy_add_kcal[tri] === undefined) out.missing.push('trimester'); else { add = DRI.pregnancy_add_kcal[tri]; out.trimester = Number(tri); }
+    } else if (stage === 'lactating') {
+      gpk = DRI.protein_lactation;
+      var lp = String(body.lactation_period || '');
+      if (DRI.lactation_add_kcal[lp] === undefined) out.missing.push('lactation_period'); else { add = DRI.lactation_add_kcal[lp]; out.lactation_period = lp; }
+    }
+    out.protein_g_per_kg = gpk;
+    out.protein_g = r(w * gpk, 2);
+    var e = eerBase(sex, age, w, h / 100, lvl);
+    out.eer_group = e.who; out.pa_coef = e.coef; out.stage_add_kcal = add;
+    out.eer_kcal = r(e.kcal + add, 2);
+    return out;
+  }
+
   /* Daily targets for one person.
-     profile: {body:{sex, birth_date, height_cm}, activity:{pal}, goal:{type:'gain'|'maintain'|'typed', gain_kg, weeks,
-               protein_g_per_kg, surplus_pct, typed_protein_g, typed_kcal}}
-     weightKg: the newest weigh-in. asOf: date of the calculation. */
+     profile: {body:{sex, birth_date, height_cm, life_stage:'none'|'pregnant'|'lactating', trimester:1|2|3, lactation_period:'0-6'|'7-12'},
+               activity:{pal} (optional), goal:{type:'gain'|'maintain'|'typed', gain_kg, weeks, protein_g_per_kg (optional: own choice),
+               surplus_pct, typed_protein_g, typed_kcal}}
+     weightKg: the newest weigh-in. asOf: date of the calculation.
+     Protein: the DRI for this body unless the person typed their own g/kg (no fixed minimum).
+     Energy to keep the weight (maintenance_kcal): the DRI EER for this body; bmr (Mifflin et al., 1990) is kept as an extra line. */
   function targets(profile, weightKg, asOf) {
     var body = (profile && profile.body) || {}, goal = (profile && profile.goal) || {}, act = (profile && profile.activity) || {};
     var out = { ok: true, missing: [], warnings: [], mode: goal.type || 'gain' };
@@ -55,13 +121,15 @@
     if (h === null || h <= 0) out.missing.push('height');
     if (age === null || age < 0) out.missing.push('birth_date');
     if (sex !== 'm' && sex !== 'f') out.missing.push('sex');
-    var pal = num(act.pal); if (pal === null) pal = PAL.light;
+    var palGiven = num(act.pal), pal = palGiven === null ? PAL.light : palGiven;
     out.pal = pal; out.age = age;
-    var maint = null;
+    var maint = null, d = null;
     if (out.missing.length === 0) {
-      var b = bmr(sex, w, h, age);
-      maint = b * pal;
-      out.bmr = r(b, 2); out.maintenance_kcal = r(maint, 2);
+      out.bmr = r(bmr(sex, w, h, age), 2);
+      d = dri(body, w, h, age, sex, palGiven);
+      out.dri = d;
+      d.missing.forEach(function (m) { out.missing.push(m); });
+      if (!d.missing.length) { maint = d.eer_kcal; out.maintenance_kcal = d.eer_kcal; }
     }
     if (out.mode === 'typed') {
       var tp = num(goal.typed_protein_g), tk = num(goal.typed_kcal);
@@ -70,18 +138,22 @@
       if (tk === null || tk <= 0) out.missing.push('typed_kcal');
       out.protein_g = r(tp, 2); out.kcal = r(tk, 2);
       if (w !== null && w > 0 && tp !== null) out.protein_g_per_kg = r(tp / w, 2);
+      if (d && d.protein_g !== undefined && tp !== null && tp < d.protein_g - EPS) out.warnings.push('protein_below_dri');
       out.ok = out.missing.length === 0;
       return out;
     }
-    var gpk = num(goal.protein_g_per_kg); if (gpk === null) gpk = DEFAULT_PROTEIN_G_PER_KG;
-    out.protein_g_per_kg = gpk;
-    if (gpk < 1.6) out.warnings.push('protein_below_1_6');
-    if (gpk > 2.2) out.warnings.push('protein_above_2_2');
+    var own = num(goal.protein_g_per_kg), gpk = own;
+    out.protein_basis = own === null ? 'dri' : 'own';
+    if (own === null && d && d.protein_g_per_kg !== undefined) gpk = d.protein_g_per_kg;
+    if (gpk !== null) out.protein_g_per_kg = gpk;
+    if (own !== null && d && d.protein_g_per_kg !== undefined && own < d.protein_g_per_kg - EPS) out.warnings.push('protein_below_dri');
+    if (gpk !== null && gpk > 2.2) out.warnings.push('protein_above_2_2');
     if (out.mode === 'gain') {
       var gk = num(goal.gain_kg), wk = num(goal.weeks);
       if (gk === null || gk <= 0) out.missing.push('gain_kg');
       if (wk === null || wk <= 0) out.missing.push('weeks');
       if (out.missing.length) { out.ok = false; return out; }
+      if (age < 19 || d.life_stage !== 'none') out.warnings.push('gain_life_stage');
       var rate = gk / wk, ratePct = rate / w * 100;
       var auto = clamp(10 + (ratePct - 0.25) * 40, 10, 20);  // 0.25 %/week -> 10 %, 0.5 %/week -> 20 % (Iraki et al., 2019)
       var sp = num(goal.surplus_pct); var surplus = sp === null ? auto : sp;
@@ -269,7 +341,7 @@
     return d.toISOString().slice(0, 10);
   }
 
-  return { VERSION: VERSION, r: r, ageYears: ageYears, bmr: bmr, PAL: PAL, DEFAULT_PROTEIN_G_PER_KG: DEFAULT_PROTEIN_G_PER_KG,
+  return { VERSION: VERSION, r: r, ageYears: ageYears, bmr: bmr, PAL: PAL, DRI: DRI, dri: dri,
     DEFAULT_WEIGHTS: DEFAULT_WEIGHTS, targets: targets, perDay: perDay, effectivePrice: effectivePrice, foodMetrics: foodMetrics,
     basket: basket, optionCost: optionCost, score: score, goalLine: goalLine, addDays: addDays };
 });
