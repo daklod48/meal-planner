@@ -251,11 +251,12 @@
     var p = u ? St.clone(u.profile) : {};
     return {
       name: str(p.name), lang: p.lang || lang,
-      body: { sex: (p.body || {}).sex || '', birth_date: str((p.body || {}).birth_date), height_cm: str((p.body || {}).height_cm) },
+      body: { sex: (p.body || {}).sex || '', birth_date: str((p.body || {}).birth_date), height_cm: str((p.body || {}).height_cm),
+        life_stage: (p.body || {}).life_stage || 'none', trimester: str((p.body || {}).trimester), lactation_period: str((p.body || {}).lactation_period) },
       weight: u ? '' : '',
-      activity: (function () { var x = (p.activity || {}).pal; if (x === undefined || x === null) return { pal: '1.53', pal_custom: '' };
+      activity: (function () { var x = (p.activity || {}).pal; if (x === undefined || x === null) return { pal: u ? '' : '1.53', pal_custom: '' };
         return ['1.53', '1.76', '2.25'].indexOf(String(x)) >= 0 ? { pal: String(x), pal_custom: '' } : { pal: 'custom', pal_custom: String(x).replace('.', lang === 'cs' ? ',' : '.') }; })(),
-      goal: { type: (p.goal || {}).type || 'gain', gain_kg: str((p.goal || {}).gain_kg), weeks: str((p.goal || {}).weeks), protein_g_per_kg: str((p.goal || {}).protein_g_per_kg || '1.6'),
+      goal: { type: (p.goal || {}).type || 'gain', gain_kg: str((p.goal || {}).gain_kg), weeks: str((p.goal || {}).weeks), protein_g_per_kg: str((p.goal || {}).protein_g_per_kg),
         surplus_pct: str((p.goal || {}).surplus_pct), typed_protein_g: str((p.goal || {}).typed_protein_g), typed_kcal: str((p.goal || {}).typed_kcal) },
       budget: { amount: str((p.budget || {}).amount), period: (p.budget || {}).period || 'day' },
       cards: (p.cards || []).slice(), cards_other: (p.cards_other || []).map(function (x) { return { key: x.key, name: x.name }; }),
@@ -291,14 +292,17 @@
       sel('body.sex', t('f_sex'), [['', t('choose')], ['m', t('sex_m')], ['f', t('sex_f')]], t('sex_help')) +
       '<div class="field"><label for="pf-body-birth_date">' + h(t('f_birth')) + '</label><input id="pf-body-birth_date" name="body.birth_date" type="date" value="' + h(v.body.birth_date) + '" max="' + St.today() + '"></div>' +
       inp('body.height_cm', t('f_height'), { mode: 'decimal', ph: '178' }) +
+      (v.body.sex === 'f' ? sel('body.life_stage', t('f_life_stage'), [['none', t('stage_none')], ['pregnant', t('stage_pregnant')], ['lactating', t('stage_lactating')]], t('life_stage_help')) +
+        (v.body.life_stage === 'pregnant' ? sel('body.trimester', t('f_trimester'), [['', t('choose')], ['1', t('trimester_1')], ['2', t('trimester_2')], ['3', t('trimester_3')]]) : '') +
+        (v.body.life_stage === 'lactating' ? sel('body.lactation_period', t('f_lactation_period'), [['', t('choose')], ['0-6', t('lact_0_6')], ['7-12', t('lact_7_12')]]) : '') : '') +
       (u ? '<p class="muted">' + h(t('weight_in_history', { kg: fmt(newestWeight(u.history), 1) })) + '</p>' : inp('weight', t('f_weight_now'), { mode: 'decimal', ph: '68,4' })) +
-      sel('activity.pal', t('f_activity'), [['1.53', t('pal_light')], ['1.76', t('pal_active')], ['2.25', t('pal_vigorous')], ['custom', t('pal_custom')]], t('pal_help')) +
+      sel('activity.pal', t('f_activity'), [['', t('pal_unknown')], ['1.53', t('pal_light')], ['1.76', t('pal_active')], ['2.25', t('pal_vigorous')], ['custom', t('pal_custom')]], t('pal_help')) +
       (v.activity.pal === 'custom' ? inp('activity.pal_custom', t('f_pal_custom'), { mode: 'decimal', ph: '1,6', help: t('pal_custom_help') }) : '') + '</fieldset>';
     out += '<fieldset><legend>' + h(t('sec_goal')) + '</legend>' +
       sel('goal.type', t('f_goal_type'), [['gain', t('goal_gain')], ['typed', t('goal_typed')], ['maintain', t('goal_maintain')]]) +
       (g.type === 'gain' ? inp('goal.gain_kg', t('f_gain_kg'), { mode: 'decimal', ph: '3' }) + inp('goal.weeks', t('f_weeks'), { mode: 'numeric', ph: '12' }) +
         inp('goal.surplus_pct', t('f_surplus'), { mode: 'decimal', help: t('surplus_help') }) : '') +
-      (g.type !== 'typed' ? inp('goal.protein_g_per_kg', t('f_gpk'), { mode: 'decimal', help: t('gpk_help') }) : '') +
+      (g.type !== 'typed' ? inp('goal.protein_g_per_kg', t('f_gpk_own'), { mode: 'decimal', ph: t('ph_gpk_dri'), help: t('gpk_own_help') }) : '') +
       (g.type === 'typed' ? inp('goal.typed_protein_g', t('f_typed_p'), { mode: 'decimal', ph: '140' }) + inp('goal.typed_kcal', t('f_typed_k'), { mode: 'decimal', ph: '2900' }) : '') +
       '<div id="pf-preview" class="preview" aria-live="polite">' + previewHtml(v, u) + '</div></fieldset>';
     out += '<fieldset><legend>' + h(t('sec_budget')) + '</legend>' + inp('budget.amount', t('f_budget'), { mode: 'decimal', ph: '250' }) +
@@ -339,21 +343,44 @@
   function draftProfile(v, u) {
     var pal = v.activity.pal === 'custom' ? num(v.activity.pal_custom) : num(v.activity.pal);
     return {
-      body: { sex: v.body.sex, birth_date: v.body.birth_date, height_cm: num(v.body.height_cm) },
+      body: bodyOf(v),
       activity: { pal: pal },
       goal: { type: v.goal.type, gain_kg: num(v.goal.gain_kg), weeks: num(v.goal.weeks), protein_g_per_kg: num(v.goal.protein_g_per_kg), surplus_pct: num(v.goal.surplus_pct),
         typed_protein_g: num(v.goal.typed_protein_g), typed_kcal: num(v.goal.typed_kcal) }
     };
   }
+  // Life stage is stored only for women; a field that does not apply is stored as null, so undo stays exact.
+  function bodyOf(v) {
+    var f = v.body.sex === 'f', st = f && (v.body.life_stage === 'pregnant' || v.body.life_stage === 'lactating') ? v.body.life_stage : 'none';
+    return { sex: v.body.sex, birth_date: v.body.birth_date, height_cm: num(v.body.height_cm), life_stage: st,
+      trimester: st === 'pregnant' && v.body.trimester ? Number(v.body.trimester) : null, lactation_period: st === 'lactating' && v.body.lactation_period ? v.body.lactation_period : null };
+  }
   function previewHtml(v, u) {
     var w = u ? newestWeight(u.history) : num(v.weight);
     var tg = P.targets(draftProfile(v, u), w, St.today());
     if (!tg.ok) return '<p class="muted">' + h(t('preview_missing', { list: tg.missing.map(function (m) { return t('miss_' + m); }).join(', ') })) + '</p>';
-    var out = '<p><strong>' + h(t('per_day_targets', { p: fmt(tg.protein_g), k: fmt(tg.kcal) })) + '</strong></p><p class="muted">' +
-      h(t('preview_how', { bmr: fmt(tg.bmr), pal: fmt(tg.pal, 2), m: fmt(tg.maintenance_kcal), gpk: fmt(tg.protein_g_per_kg, 2) })) +
-      (tg.mode === 'gain' ? ' ' + h(t('preview_gain', { r: fmt(tg.rate_kg_week, 2), pct: fmt(tg.rate_pct_week, 2), s: fmt(tg.surplus_pct, 1) })) : '') + '</p>';
-    tg.warnings.forEach(function (x) { out += '<p class="warn">' + h(t('warn_' + x)) + '</p>'; });
+    var out = '<p><strong>' + h(t('per_day_targets', { p: fmt(tg.protein_g), k: fmt(tg.kcal) })) + '</strong></p>' + targetsExplain(tg, w) +
+      (tg.mode === 'gain' ? '<p class="muted">' + h(t('preview_gain', { r: fmt(tg.rate_kg_week, 2), pct: fmt(tg.rate_pct_week, 2), s: fmt(tg.surplus_pct, 1) })) + '</p>' : '');
+    tg.warnings.forEach(function (x) { out += '<p class="warn">' + h(t('warn_' + x, warnVars(tg))) + '</p>'; });
     return out;
+  }
+  function warnVars(tg) { var d = tg.dri || {}; return { dri: fmt(d.protein_g_per_kg, 2), drig: fmt(d.protein_g) }; }
+  /* "Where each target comes from": one line per target, with the rule, the numbers of this body and a source link.
+     Used in the profile form, on the profile card and above the plan form. */
+  function targetsExplain(tg, w) {
+    var d = tg.dri; if (!d || d.missing.length) return '';
+    var grp = t('grp_' + d.eer_group, { a: d.age_group }), act = t('pa_' + d.pa_level) + (d.activity_given ? '' : ' ' + t('pa_assumed'));
+    var stage = d.life_stage === 'pregnant' ? t('stage_line_pregnant', { n: d.trimester, k: fmt(d.stage_add_kcal) })
+      : d.life_stage === 'lactating' ? t('stage_line_lactating', { p: d.lactation_period, k: fmt(d.stage_add_kcal) }) : '';
+    var prot = tg.mode === 'typed' ? t('src_protein_typed', { drig: fmt(d.protein_g), dri: fmt(d.protein_g_per_kg, 2) })
+      : tg.protein_basis === 'own' ? t('src_protein_own', { gpk: fmt(tg.protein_g_per_kg, 2), kg: fmt(w, 1), p: fmt(tg.protein_g), dri: fmt(d.protein_g_per_kg, 2), drig: fmt(d.protein_g) })
+      : t('src_protein_dri', { gpk: fmt(d.protein_g_per_kg, 2), kg: fmt(w, 1), p: fmt(d.protein_g), grp: d.life_stage === 'none' ? t('age_years', { a: d.age_group }) : t('stage_' + d.life_stage) });
+    var en = tg.mode === 'typed' ? t('src_energy_typed', { m: fmt(d.eer_kcal) })
+      : t('src_energy_eer', { m: fmt(d.eer_kcal), grp: grp, act: act, pa: d.pa_coef === null ? '–' : fmt(d.pa_coef, 2) }) + (stage ? ' ' + stage : '');
+    return '<ul class="targets-src">' +
+      '<li><b>' + h(t('tgt_protein')) + '</b> ' + h(prot) + ' <a href="' + DRI_LINKS.protein + '" target="_blank" rel="noopener">' + h(t('src_protein_link')) + '</a></li>' +
+      '<li><b>' + h(t('tgt_energy')) + '</b> ' + h(en) + ' <a href="' + DRI_LINKS.report + '" target="_blank" rel="noopener">' + h(t('src_energy_link')) + '</a></li>' +
+      '<li class="muted">' + h(t('src_unverified')) + '</li></ul>';
   }
   function onProfileInput(el) {
     var key = pfKey(), d = drafts[key]; if (!d) return;
@@ -365,7 +392,7 @@
     } else setDeep(v, name, el.value);
     d.typed = true; saveDrafts();
     // Fields that change which boxes exist redraw the form (focus is kept); others only update the preview.
-    if (name === 'goal.type' || name === 'activity.pal') { render(); return; }
+    if (name === 'goal.type' || name === 'activity.pal' || name === 'body.sex' || name === 'body.life_stage') { render(); return; }
     var pv = $('#pf-preview'); if (pv) pv.innerHTML = previewHtml(v, viewArg ? S().users[viewArg] : null);
   }
   function profileErrors(v, isNew) {
@@ -381,7 +408,10 @@
       var wk = num(v.goal.weeks); if (wk === null || wk < 1 || wk > 104) miss.push(t('f_weeks') + ' ' + rng(1, 104));
       var sp = v.goal.surplus_pct.trim() === '' ? 0 : num(v.goal.surplus_pct); if (sp === null || sp < 0 || sp > 40) miss.push(t('f_surplus') + ' ' + rng(0, 40));
     }
-    if (v.goal.type !== 'typed') { var g = num(v.goal.protein_g_per_kg); if (g === null || g < 0.8 || g > 3.5) miss.push(t('f_gpk') + ' ' + rng(0.8, 3.5)); }
+    // Own protein per kg is optional (blank = the DRI for this body); no fixed minimum, only a sanity range.
+    if (v.goal.type !== 'typed' && v.goal.protein_g_per_kg.trim() !== '') { var g = num(v.goal.protein_g_per_kg); if (g === null || g < 0.3 || g > 3.5) miss.push(t('f_gpk_own') + ' ' + rng(0.3, 3.5)); }
+    if (v.body.sex === 'f' && v.body.life_stage === 'pregnant' && !v.body.trimester) miss.push(t('f_trimester'));
+    if (v.body.sex === 'f' && v.body.life_stage === 'lactating' && !v.body.lactation_period) miss.push(t('f_lactation_period'));
     if (v.goal.type === 'typed') {
       var tp = num(v.goal.typed_protein_g); if (tp === null || tp < 20 || tp > 500) miss.push(t('f_typed_p') + ' ' + rng(20, 500));
       var tk = num(v.goal.typed_kcal); if (tk === null || tk < 800 || tk > 7000) miss.push(t('f_typed_k') + ' ' + rng(800, 7000));
@@ -414,7 +444,7 @@
     if (v.goal.type === 'typed') { goal.typed_protein_g = num(v.goal.typed_protein_g); goal.typed_kcal = num(v.goal.typed_kcal); }
     return {
       name: v.name.trim(), lang: v.lang,
-      body: { sex: v.body.sex, birth_date: v.body.birth_date, height_cm: num(v.body.height_cm) },
+      body: bodyOf(v),
       activity: { pal: pal },
       goal: goal,
       budget: { amount: num(v.budget.amount), period: v.budget.period, currency: 'CZK' },
@@ -481,6 +511,7 @@
     var out = '<section class="card" data-form="' + h(key) + '"><h2>' + h(t('plan_title', { name: u.profile.name })) + '</h2><p class="gist">' + h(t('plan_gist')) + '</p>';
     out += '<div class="targets">' + (tg.ok ? '<span>' + h(t('per_day_targets', { p: fmt(tg.protein_g), k: fmt(tg.kcal) })) + '</span>' : '<span class="warn">' + h(t('targets_missing')) + ' ' + h(tg.missing.map(function (m) { return t('miss_' + m); }).join(', ')) + '</span>') +
       '<span>' + h(t('budget_per_day_is', { b: czk(bpd) })) + '</span><span>' + h(t('cards_line', { list: myCards(u.profile).map(cardName).join(', ') || t('none') })) + '</span></div>';
+    if (tg.ok && tg.dri) out += '<details class="why-targets"><summary>' + h(t('why_targets')) + '</summary>' + targetsExplain(tg, newestWeight(u.history)) + '</details>';
     out += '<h3>' + h(t('q_mode')) + '</h3><div class="modes" role="radiogroup" aria-label="' + h(t('q_mode')) + '">' + ['cook', 'order', 'eatout'].map(function (m) {
       return '<button type="button" role="radio" id="mode-' + m + '" aria-checked="' + (v.mode === m) + '" class="mode' + (v.mode === m ? ' on' : '') + '" data-act="mode" data-mode="' + m + '"><strong>' + h(t('mode_' + m)) + '</strong><span>' + h(t('mode_' + m + '_gist')) + '</span></button>';
     }).join('') + '</div>';
@@ -929,7 +960,10 @@
       '<p class="note">' + h(t('not_medical')) + '</p></section>';
     return out;
   }
+  var DRI_LINKS = { protein: 'https://www.ncbi.nlm.nih.gov/books/NBK56068/table/summarytables.t4/', report: 'https://doi.org/10.17226/10490' };
   var SOURCES = [
+    'Institute of Medicine. (2005). <i>Dietary Reference Intakes for energy, carbohydrate, fiber, fat, fatty acids, cholesterol, protein, and amino acids</i>. The National Academies Press. <a href="https://doi.org/10.17226/10490" target="_blank" rel="noopener">https://doi.org/10.17226/10490</a> (protein RDA in g per kg by life stage; Estimated Energy Requirement equations; pregnancy and lactation additions. Used for every protein and energy target since 5 Nov 2026.)',
+    'Institute of Medicine. (2011). Dietary Reference Intakes: Recommended Dietary Allowances and Adequate Intakes, total water and macronutrients [Summary table]. In <i>Dietary Reference Intakes for calcium and vitamin D</i>. The National Academies Press. <a href="https://www.ncbi.nlm.nih.gov/books/NBK56068/table/summarytables.t4/" target="_blank" rel="noopener">https://www.ncbi.nlm.nih.gov/books/NBK56068/table/summarytables.t4/</a>',
     'Food and Agriculture Organization of the United Nations. (2004). <i>Human energy requirements: Report of a Joint FAO/WHO/UNU Expert Consultation</i> (Food and Nutrition Technical Report Series No. 1), Chapter 5, Tables 5.1 and 5.3. <a href="https://www.fao.org/4/y5686e/y5686e07.htm" target="_blank" rel="noopener">https://www.fao.org/4/y5686e/y5686e07.htm</a> <small>(activity levels 1.53, 1.76, 2.25)</small>',
     'Iraki, J., Fitschen, P., Espinar, S., &amp; Helms, E. (2019). Nutrition recommendations for bodybuilders in the off-season: A narrative review. <i>Sports, 7</i>(7), 154. <a href="https://doi.org/10.3390/sports7070154" target="_blank" rel="noopener">https://doi.org/10.3390/sports7070154</a> <small>(protein 1.6–2.2 g/kg, surplus 10–20 %, gain 0.25–0.5 % of body weight a week)</small>',
     'Jäger, R., Kerksick, C. M., Campbell, B. I., Cribb, P. J., Wells, S. D., Skwiat, T. M., Purpura, M., Ziegenfuss, T. N., Ferrando, A. A., Arent, S. M., Smith-Ryan, A. E., Stout, J. R., Arciero, P. J., Ormsbee, M. J., Taylor, L. W., Wilborn, C. D., Kalman, D. S., Kreider, R. B., Willoughby, D. S., . . . Antonio, J. (2017). International Society of Sports Nutrition position stand: Protein and exercise. <i>Journal of the International Society of Sports Nutrition, 14</i>, 20. <a href="https://doi.org/10.1186/s12970-017-0177-8" target="_blank" rel="noopener">https://doi.org/10.1186/s12970-017-0177-8</a> <small>(1.4–2.0 g/kg)</small>',

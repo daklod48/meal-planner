@@ -8,6 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { execFileSync } from 'child_process';
+import { createRequire } from 'module';
 
 const ROOT = path.resolve('.');
 const OUT = path.join(ROOT, 'tests', 'out');
@@ -76,10 +77,14 @@ try {
   await typeInto('#pf-goal-gain_kg', '3', 'gain kg');
   await typeInto('#pf-goal-weeks', '12', 'weeks');
   await typeInto('#pf-goal-protein_g_per_kg', '1,8', 'protein per kg');
-  ok('preview at default activity 1.53 (2,958 kcal)', (await text('#pf-preview')).includes('2,958 kcal'));
+  // 2026-11-05 (planner 1.2, DRI energy): the expected kcal is computed by planner.js from the same inputs, not typed in
+  // (the old Mifflin numbers were 2,958 and 3,402). en-GB format, no decimals, as the preview prints it.
+  const PL = createRequire(import.meta.url)('../app/js/planner.js');
+  const expK = pal => PL.targets({ body: { sex: 'm', birth_date: '2003-05-14', height_cm: 178 }, activity: { pal }, goal: { type: 'gain', gain_kg: 3, weeks: 12, protein_g_per_kg: 1.8 } }, 68.4, new Date().toISOString().slice(0, 10)).kcal.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  ok('preview at default activity 1.53 (' + expK(1.53) + ' kcal)', (await text('#pf-preview')).includes(expK(1.53) + ' kcal'));
   await page.selectOption('#pf-activity-pal', '1.76');
   const prev = await text('#pf-preview');
-  ok('preview targets = planner (123 g, 3,402 kcal)', prev.includes('123 g protein and 3,402 kcal a day'), prev);
+  ok('preview targets = planner (123 g, ' + expK(1.76) + ' kcal)', prev.includes('123 g protein and ' + expK(1.76) + ' kcal a day'), prev);
   ok('activity change keeps form values', (await page.inputValue('#pf-name')) === 'Tomáš Dvořák' && (await page.inputValue('#pf-goal-gain_kg')) === '3');
   await typeInto('#pf-budget-amount', '250', 'budget');
   await page.check('#pf-card-rohlik-xtra'); await page.check('#pf-card-lidl-plus');
