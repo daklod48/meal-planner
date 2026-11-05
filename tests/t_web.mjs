@@ -176,6 +176,37 @@ try {
   ok('demo: maths check agrees with tools/planner.py', rt.includes('the app and tools/planner.py give the same scores'));
   ok('demo: prices are not shown as old', (await page.$$('#main tr.stale')).length === 0);
 
+  // ===== lab run 1: instant estimate, phone tab bar, badge =====
+  await page.click('#nav button[data-view="plan"]');
+  await page.click('#mode-cook');
+  const est = await page.evaluate(() => {
+    const S = window.MPStore.S(), u = S.users['tomas-dvorak'];
+    const tg = window.MPPlanner.targets(u.profile, u.history.weighins.slice().sort((a, b) => a.date < b.date ? -1 : 1).pop().kg, window.MPStore.today());
+    return { foods: S.foods.items, tg, cards: u.profile.cards, days: Number(document.getElementById('rq-days').value) || 7 };
+  });
+  const shops = {}; est.foods.filter(f => f.in_stock !== false && !/tunak/.test(f.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())).forEach(f => (shops[f.shop] = shops[f.shop] || []).push(f));
+  const tries = Object.keys(shops).filter(k => shops[k].length >= 4).map(k => ({ k, b: PL.basket(shops[k], { protein_g: est.tg.protein_g * est.days, kcal: est.tg.kcal * est.days }, est.cards) }))
+    .sort((a, b) => (a.b.met === b.b.met ? 0 : a.b.met ? -1 : 1) || a.b.cost - b.b.cost);
+  const ip = await text('.instant');
+  ok('instant estimate: shown in Cook mode before any Claude run, with the cost planner.js basket() gives (' + Math.round(tries[0].b.cost) + ' CZK)', ip.includes(Math.round(tries[0].b.cost).toLocaleString('en-GB') + ' CZK') && /prices read on/.test(ip), ip.slice(0, 300));
+  ok('instant estimate: says what it is not (not checked today, no cart)', /not checked today/.test(ip) && /no cart/.test(ip));
+  ok('instant estimate: writes nothing', !(await page.evaluate(() => window.MPStore.hasUnsaved())) && (await page.evaluate(() => Object.keys(window.MPStore.S().requests).length)) === 1);
+  await page.setViewportSize({ width: 390, height: 844 });
+  const tabs = await page.evaluate(() => Array.from(document.querySelectorAll('#nav button')).filter(b => b.offsetParent).map(b => ({ t: b.textContent.trim(), h: b.getBoundingClientRect().height, y: b.getBoundingClientRect().top })));
+  ok('phone: a bottom tab bar of 5, each at least 44 px, at the bottom of the screen', tabs.length === 5 && tabs.every(x => x.h >= 44 && x.y > 844 - 90), tabs);
+  ok('phone: content starts within the top 120 px', await page.evaluate(() => document.querySelector('#main > *').getBoundingClientRect().top < 120));
+  await page.click('#nav button[data-view="settings"]');
+  await page.click('.more-row button[data-view="foods"]');
+  ok('phone: Foods is reached through Settings > More', /Foods/.test(await text('#main h2')));
+  await page.setViewportSize({ width: 1440, height: 900 });
+  // the result was opened earlier in this test; forget that, as on a device that never opened it
+  await page.evaluate(() => localStorage.removeItem('mp-seen:' + window.MPWeb._test.backend().user().uid));
+  await page.click('#nav button[data-view="history"]');
+  const badge = await page.evaluate(() => (document.querySelector('#nav .badge') || {}).textContent || '');
+  ok('badge: Results shows 1 result not opened yet', badge === '1', badge);
+  await page.click('#nav button[data-view="requests"]'); await page.click('button[data-act="open-request"]');
+  ok('badge: gone once the result was opened', !(await page.$('#nav .badge')));
+
   // ===== the result-file bridge (Settings > Prices from Claude's runs) =====
   await page.click('#nav button[data-view="settings"]');
   const rid = await page.evaluate(() => Object.keys(window.MPStore.S().results)[0]);
@@ -208,7 +239,9 @@ try {
 
   // ===== phone width on the signed-out screens =====
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.click('button[data-act="web-signout"]');
+  // phone (lab run 1): Sign out lives in Settings > More, not in the one-row header
+  await page.click('#nav button[data-view="settings"]');
+  await page.click('.more-row button[data-act="web-signout"]');
   await until(() => !!document.querySelector('button[data-act="web-demo"]'));
   ok('390 px: home page has no sideways scroll', await noSideScroll());
   const tap = await page.evaluate(() => Array.from(document.querySelectorAll('#main button')).filter(b => b.offsetParent).map(b => b.getBoundingClientRect().height));

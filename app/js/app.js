@@ -527,6 +527,7 @@
         return '<div class="field' + (o.cls ? ' ' + o.cls : '') + '"><label for="rq-' + name + '">' + h(label) + '</label><input id="rq-' + name + '" name="' + name + '" type="' + (o.type || 'text') + '"' + (o.mode ? ' inputmode="' + o.mode + '"' : '') +
           ' value="' + h(v[name]) + '"' + (o.ph ? ' placeholder="' + h(o.ph) + '"' : '') + (o.min ? ' min="' + o.min + '"' : '') + ' autocomplete="off">' + (o.help ? '<small>' + h(o.help) + '</small>' : '') + '</div>';
       }
+      if (WEB && v.mode === 'cook') out += window.MPWeb.instantPlan(u, v, tg);  // web app: an estimate at once from prices already in the account
       var days = num(v.days) || 0;
       out += '<h3>' + h(t('q_boxes')) + '</h3><div class="formgrid">' +
         '<div class="field"><label for="rq-start_date">' + h(t('f_start')) + '</label><input id="rq-start_date" name="start_date" type="date" value="' + h(v.start_date) + '" min="' + St.today() + '"></div>' +
@@ -934,7 +935,7 @@
   // SETTINGS
   // =========================================================
   function vSettings() {
-    var u = me(), out = '<section class="card"><h2>' + h(t('settings_title')) + '</h2>';
+    var u = me(), out = '<section class="card"><h2>' + h(t('settings_title')) + '</h2>' + (WEB ? window.MPWeb.moreHtml() : '');
     out += '<h3>' + h(t('language')) + '</h3><p>' + h(t('language_help')) + '</p>';
     if (u) {
       var key = 'weights:' + u.profile.id, w = u.profile.weights || P.DEFAULT_WEIGHTS;

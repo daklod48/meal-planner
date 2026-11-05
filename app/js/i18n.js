@@ -195,7 +195,17 @@ window.MPI18N = {
     w_save_error_MP_FILE_GONE: 'Not saved: {path} is no longer in your account.', w_save_error_MP_TOO_BIG: 'Not saved: {path} is too big for one record.',
     w_send_what_happens: 'This saves the request in your account. A result appears when Claude has run it (see Settings > Prices from Claude\'s runs).',
     w_profiles_gist: 'One profile per person. Each has its own goal, budget, cards, places, history and charts. All profiles here belong to this account.',
-    w_request_missing: 'This request is not in your account any more.'
+    w_request_missing: 'This request is not in your account any more.',
+    // lab run 1 (2026-11-05): phone tab bar and the instant plan
+    web_tab_plan: 'Plan', web_tab_requests: 'Results', web_tab_history: 'History', web_tab_profiles: 'Profile', web_tab_settings: 'Settings', web_tab_foods: 'Foods', web_tab_shops: 'Shops',
+    web_new_results: '{n} new', web_more: 'More:',
+    ip_eyebrow: 'Instant estimate', ip_title: 'What it could cost, right now',
+    ip_lede: 'From prices already in your account, the cheapest single shop that covers your targets for {days} days is {shop}.',
+    ip_total: 'in total, about {d} CZK a day', ip_protein: 'of your protein ({g} g a day)', ip_energy: 'of your energy ({k} kcal a day)',
+    ip_under_budget: 'Within your budget of {b} CZK ({x} CZK to spare).', ip_over_budget: 'Over your budget of {b} CZK by {x} CZK.',
+    ip_list: 'Shopping list ({n} items)', ip_card: 'card price', ip_others: 'Other shops:', ip_short: 'does not cover the targets',
+    ip_honest: 'Estimate made in your browser from {n} prices read on {date}, not checked today; whole packs, no vegetables rule, no recipes, no cart. Send to Claude for the full plan with today\'s prices.',
+    ip_need_targets: 'Fill in your profile (body and weight) to see an estimate.', ip_no_prices: 'No prices in your account yet. After Claude\'s first run, an estimate appears here at once for every later plan.'
   },
   cs: {
     app_name: 'Plánovač jídla',
@@ -392,6 +402,16 @@ window.MPI18N = {
     w_save_error_MP_FILE_GONE: 'Neuloženo: {path} už ve vašem účtu není.', w_save_error_MP_TOO_BIG: 'Neuloženo: {path} je na jeden záznam příliš velký.',
     w_send_what_happens: 'Tím se požadavek uloží do vašeho účtu. Výsledek se objeví, až ho Claude zpracuje (viz Nastavení > Ceny z běhů Clauda).',
     w_profiles_gist: 'Jeden profil na osobu. Každý má vlastní cíl, rozpočet, karty, místa, historii a grafy. Všechny profily zde patří k tomuto účtu.',
-    w_request_missing: 'Tento požadavek už ve vašem účtu není.'
+    w_request_missing: 'Tento požadavek už ve vašem účtu není.',
+    // lab run 1 (2026-11-05): spodní lišta na telefonu a okamžitý odhad
+    web_tab_plan: 'Plán', web_tab_requests: 'Výsledky', web_tab_history: 'Historie', web_tab_profiles: 'Profil', web_tab_settings: 'Nastavení', web_tab_foods: 'Potraviny', web_tab_shops: 'Obchody',
+    web_new_results: 'nové: {n}', web_more: 'Další:',
+    ip_eyebrow: 'Okamžitý odhad', ip_title: 'Kolik by to stálo, hned teď',
+    ip_lede: 'Z cen, které už máte v účtu, je nejlevnější jeden obchod, který pokryje vaše cíle na {days} dní: {shop}.',
+    ip_total: 'celkem, asi {d} Kč denně', ip_protein: 'vašich bílkovin ({g} g denně)', ip_energy: 'vaší energie ({k} kcal denně)',
+    ip_under_budget: 'V rámci rozpočtu {b} Kč (zbývá {x} Kč).', ip_over_budget: 'Nad rozpočtem {b} Kč o {x} Kč.',
+    ip_list: 'Nákupní seznam (položky: {n})', ip_card: 'cena s kartou', ip_others: 'Další obchody:', ip_short: 'nepokryje cíle',
+    ip_honest: 'Odhad spočítaný ve vašem prohlížeči z {n} cen přečtených {date}, dnes neověřených; celá balení, bez pravidla zeleniny, bez receptů, bez košíku. Pro úplný plán s dnešními cenami pošlete požadavek Claudovi.',
+    ip_need_targets: 'Vyplňte profil (tělo a váhu), aby se ukázal odhad.', ip_no_prices: 'V účtu zatím nejsou žádné ceny. Po prvním běhu Clauda se tu odhad objeví hned u každého dalšího plánu.'
   }
 };

@@ -1,10 +1,103 @@
 [
- {"run": 0, "date": "2026-11-05", "branch": "main", "what_changed": "Baseline: the web app as built in this session (home page, accounts, demo, Firestore sync, DRI targets).",
-  "innovation": null, "references": [], "scores": {"beauty": 6, "clarity": 5, "flow": 5, "trust": 7, "mobile": 4, "speed": 9, "accessibility": 4, "delight": 6}, "total": 46,
-  "flaws": ["Phone: header, language and account buttons and a 3-row tab bar take the first 338 px of every signed-in screen; most of these controls are under 44 px.",
-            "Phone Result: the Everything found table is squeezed and cut off on the right; each pick is buried under a long technical notes paragraph.",
-            "Getting a plan dead-ends in Settings (download a request, run Claude on another computer, upload a result); the demo result shows a date after today."],
-  "size": {"app_js_kb": 0, "note": "baseline"}, "tests": "all pass: 1,401 original checks plus t_web 41 + 43, t_rules 23",
-  "verdict": "baseline", "preview": "LAB/captures/run-00/ (24 screenshots + metrics.json)", "scorer": "independent subagent (saw only captures, metrics.json, RUBRIC.md)",
-  "tools": ["Playwright Chromium captures (LAB/capture.mjs)", "independent scorer subagent"]}
+ {
+  "run": 0,
+  "date": "2026-11-05",
+  "branch": "main",
+  "what_changed": "Baseline: the web app as built in this session (home page, accounts, demo, Firestore sync, DRI targets).",
+  "innovation": null,
+  "references": [],
+  "scores": {
+   "beauty": 6,
+   "clarity": 5,
+   "flow": 5,
+   "trust": 7,
+   "mobile": 4,
+   "speed": 9,
+   "accessibility": 4,
+   "delight": 6
+  },
+  "total": 46,
+  "flaws": [
+   "Phone: header, language and account buttons and a 3-row tab bar take the first 338 px of every signed-in screen; most of these controls are under 44 px.",
+   "Phone Result: the Everything found table is squeezed and cut off on the right; each pick is buried under a long technical notes paragraph.",
+   "Getting a plan dead-ends in Settings (download a request, run Claude on another computer, upload a result); the demo result shows a date after today."
+  ],
+  "size": {
+   "app_js_kb": 0,
+   "note": "baseline"
+  },
+  "tests": "all pass: 1,401 original checks plus t_web 41 + 43, t_rules 23",
+  "verdict": "baseline",
+  "preview": "LAB/captures/run-00/ (24 screenshots + metrics.json)",
+  "scorer": "independent subagent (saw only captures, metrics.json, RUBRIC.md)",
+  "tools": [
+   "Playwright Chromium captures (LAB/capture.mjs)",
+   "independent scorer subagent"
+  ]
+ },
+ {
+  "run": 1,
+  "date": "2026-11-05",
+  "branch": "lab-run-01",
+  "what_changed": "Phone app shell: one-row header (profile, other language, demo badge) and a bottom tab bar of five with icons, short words and a badge for results not opened yet; Foods, Shops and Sign out under Settings > More on the phone. All phone controls at least 44 px. Wide tables scroll inside their card. Demo seed: result and foods dates pinned to the run's own time (fixes 'Done 21. 11. 2026' on 5. 11.).",
+  "innovation": "Instant estimate: in Cook mode the browser runs planner.js basket() per shop on the prices already in the account and shows at once the cheapest single shop that covers the targets for the chosen days (total, per day, protein and energy cover, budget check, shopping list), labelled as an estimate with the date prices were read. Writes nothing.",
+  "references": [
+   {
+    "name": "Apple Human Interface Guidelines: Tab bars",
+    "url": "https://developer.apple.com/design/human-interface-guidelines/tab-bars",
+    "borrowed": "five or fewer tabs, always visible, navigation not actions, a badge for news"
+   },
+   {
+    "name": "Apple Human Interface Guidelines: Buttons",
+    "url": "https://developer.apple.com/design/human-interface-guidelines/buttons",
+    "borrowed": "hit region at least 44 x 44 pt"
+   },
+   {
+    "name": "HelloDorm v2 (daklod48/hellodorm, HOW-IT-WORKS section 10)",
+    "url": "https://github.com/daklod48/hellodorm",
+    "borrowed": "phone fixes measured in px, sticky bars, 44 px checks"
+   }
+  ],
+  "references_note": "21st.dev, Mobbin, Dribbble, Behance, Awwwards, Land-book and YouTube were blocked by the network; only Apple's guidelines and GitHub answered.",
+  "scores": {
+   "beauty": 6,
+   "clarity": 6,
+   "flow": 5,
+   "trust": 8,
+   "mobile": 6,
+   "speed": 9,
+   "accessibility": 7,
+   "delight": 7
+  },
+  "total": 54,
+  "flaws": [
+   "Result: all three picks are 'calories short by more than 10 %' (about 1,445 of 3,545 kcal) and the notes show a raw Windows path and an internal maths line.",
+   "Getting a real plan still needs the file bridge in Settings (download a request, run Claude on the laptop, upload the result).",
+   "Phone: the 'Being typed' bar on every screen plus the header still push content down about 200 px on some screens; the profile name is cut off."
+  ],
+  "measured": {
+   "first_content_y_phone": "338 -> 67 px",
+   "phone_controls_under_44px_profile_edit": "49 -> 7 (card checkboxes inside 44 px label rows, and the native file picker)",
+   "home_ms": 122,
+   "demo_ms": 349,
+   "phone_kb": 470,
+   "console_errors": 0
+  },
+  "size": {
+   "bytes_before": 203860,
+   "bytes_after": 218446,
+   "change_pct": 7.2,
+   "files": "app.js, web.js, i18n.js, app.css, web.css"
+  },
+  "tests": "all pass: the 1,401 original checks, t_web 49 (practice) and 51 (Firebase emulators), t_rules 23",
+  "verdict": "KEEP (total +8, no criterion dropped, tests pass)",
+  "preview": "LAB/captures/run-01/ (24 screenshots + metrics.json)",
+  "scorer": "independent subagent (saw only run-01 captures, metrics.json, RUBRIC.md)",
+  "tools": [
+   "Playwright Chromium captures and checks",
+   "Apple HIG pages (only reachable reference site)",
+   "independent scorer subagent",
+   "Firebase emulators for the Firebase test run"
+  ]
+ }
 ]
