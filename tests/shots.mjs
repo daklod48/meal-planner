@@ -1,5 +1,5 @@
 // Screenshots of three screens, from the data the last t_app.mjs run left in tests/out/data (for a look at the layout).
-import { chromium } from '/opt/npm-tools/node_modules/playwright/index.mjs';
+import { chromium } from './pw.mjs';
 import http from 'http'; import fs from 'fs'; import path from 'path';
 const ROOT = path.resolve('.');
 const server = http.createServer((q, s) => { const p = path.join(ROOT, decodeURIComponent(q.url.split('?')[0])); if (!fs.existsSync(p) || fs.statSync(p).isDirectory()) { s.writeHead(404); s.end(); return; } s.writeHead(200, { 'content-type': p.endsWith('.html') ? 'text/html; charset=utf-8' : p.endsWith('.css') ? 'text/css' : 'text/javascript; charset=utf-8' }); fs.createReadStream(p).pipe(s); });

@@ -2,14 +2,18 @@
 // with walking-time bands (his rule 19/10/2026: 10 min or less green, then clearly different marks as the walk
 // grows) and the services that deliver there. Run from MealPlanner/: LC_ALL=C.UTF-8 node tests/t_shops.mjs
 // Uses the real data/shops/shops.json of this folder; also feeds a broken file to prove nothing crashes.
-import { chromium } from '/opt/npm-tools/node_modules/playwright/index.mjs';
+import { chromium } from './pw.mjs';
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
 const ROOT = path.resolve('.');
-const SHOPS = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/shops/shops.json'), 'utf8'));
+// 2026-11-05: a copy without data/ (the share zip, the GitHub repo) uses the 19/10 survey fixture, the same file
+// tests/t_cook.py uses; on the laptop with data/ the real survey is checked as before.
+const SHOPS_FILE = fs.existsSync(path.join(ROOT, 'data/shops/shops.json')) ? 'data/shops/shops.json' : 'tests/fixtures/shops.json';
+const SHOPS = JSON.parse(fs.readFileSync(path.join(ROOT, SHOPS_FILE), 'utf8'));
+console.log('shops from ' + SHOPS_FILE);
 let pass = 0, fail = 0;
 const log = [];
 function ok(name, cond, extra) { if (cond) { pass++; log.push('ok   ' + name); } else { fail++; log.push('FAIL ' + name + (extra !== undefined ? ' :: ' + JSON.stringify(extra).slice(0, 400) : '')); } }

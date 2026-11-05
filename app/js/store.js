@@ -88,6 +88,17 @@
     });
   }
   function folderName() { return rootDir ? rootDir.name : null; }
+  // Web app (2026-11-05): use a folder that is not on this computer (app/js/cloud/vfs.js: the same handle methods,
+  // files kept in the signed-in person's Firestore space or the local practice store). Every save rule stays as it is.
+  function useRoot(h) { return use(h); }
+  // Sign out: forget everything this window holds, so the next account starts empty.
+  function leave() {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = null; rootDir = null; dataDir = null; known = {}; dirty = {}; saving = false;
+    status = { state: 'idle', at: null, error: null, pending: 0 };
+    S = { settings: null, users: {}, requests: {}, results: {}, updates: [], foods: null, shops: null };
+    ME.userId = null;
+  }
 
   // ---------- files (paths are relative to data/, with /) ----------
   function dirOf(parts, create) {
@@ -382,7 +393,7 @@
 
   root.MPStore = {
     on: on, S: function () { return S; }, ME: ME, nowIso: nowIso, today: today, hasFolderApi: hasFolderApi,
-    pick: pick, reconnect: reconnect, askAgain: askAgain, folderName: folderName, refreshShared: refreshShared, reload: reload,
+    pick: pick, reconnect: reconnect, useRoot: useRoot, leave: leave, askAgain: askAgain, folderName: folderName, refreshShared: refreshShared, reload: reload,
     createUser: createUser, commit: commit, undo: undo, cancelRequest: cancelRequest, unsavedList: function () { return Object.keys(dirty); }, undoCheck: undoCheck, nextCode: nextCode, getPath: getPath,
     setSetting: setSetting, writeRequest: writeRequest, saveNow: saveNow, hasUnsaved: hasUnsaved, status: function () { return status; },
     slug: slug, clone: clone, _test: { readText: readText, list: list, known: function () { return known; }, writeText: writeText }

@@ -15,13 +15,16 @@
   var VIEWS = ['profiles', 'plan', 'requests', 'history', 'foods', 'shops', 'settings'];
 
   // ---------- helpers ----------
+  // Web app: a few words differ when the data lives in an account, not a folder (keys w_<key> in i18n.js).
+  var WEB = !!window.MP_WEB;
   function t(k, v) {
+    if (WEB && D.en['w_' + k]) k = 'w_' + k;
     var s = (D[lang] && D[lang][k]) || D.en[k];
     if (s === undefined) { console.warn('missing text', k); s = k; }
     if (v) Object.keys(v).forEach(function (n) { s = s.split('{' + n + '}').join(v[n]); });
     return s;
   }
-  function has(k) { return !!((D[lang] && D[lang][k]) || D.en[k]); }
+  function has(k) { return !!((WEB && D.en['w_' + k]) || (D[lang] && D[lang][k]) || D.en[k]); }
   function h(s) { return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function $(s, el) { return (el || document).querySelector(s); }
   function $$(s, el) { return Array.prototype.slice.call((el || document).querySelectorAll(s)); }
@@ -92,7 +95,8 @@
   // ---------- drafts: half-typed forms survive clicks elsewhere and reloads ----------
   function lsGet(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private window */ } }
-  function saveDrafts() { lsSet('mealplanner:drafts', drafts); }
+  var DRAFTS_KEY = 'mealplanner:drafts';  // web app: one key per account, so two accounts in one browser never mix drafts
+  function saveDrafts() { lsSet(DRAFTS_KEY, drafts); }
   function draft(key, init, label, where, base) {
     var d = drafts[key], today = St.today();
     if (!d || !d.typed) d = drafts[key] = { values: init(), typed: false, label: label, where: where, day: today, base: base === undefined ? null : base };
@@ -139,6 +143,7 @@
       return '<button type="button" data-view="' + v + '"' + (view === v || (view === 'profile-edit' && v === 'profiles') || (view === 'request' && v === 'requests') ? ' class="on" aria-current="page"' : '') + (dis ? ' disabled title="' + h(t('pick_profile_first')) + '"' : '') + '>' + h(t('nav_' + v)) + '</button>';
     }).join('') : '';
     renderStatus();
+    if (WEB) window.MPWeb.header();
     document.title = t('app_name');
   }
   function renderStatus() {
@@ -214,7 +219,7 @@
     var s = S().settings;
     if (s.lang) lang = s.lang;
     if (s.last_user && S().users[s.last_user]) St.ME.userId = s.last_user;
-    var d = lsGet('mealplanner:drafts'); if (d && typeof d === 'object') drafts = d;
+    if (!WEB) { var d = lsGet(DRAFTS_KEY); if (d && typeof d === 'object') drafts = d; }
     go(me() ? 'plan' : 'profiles');
   }
 
@@ -945,7 +950,7 @@
     }
     var s = S().settings;
     out += '<h3>' + h(t('rules_title')) + '</h3><ul><li>' + h(t('rule_stale', { n: s.stale_days })) + '</li><li>' + h(t('rule_replan', { n: s.replan_pct })) + '</li><li>' + h(t('rule_watch', { n: s.watch_pct })) + '</li><li>' + h(t('rule_cart')) + '</li><li>' + h(t('rule_card')) + '</li></ul>';
-    out += '<h3>' + h(t('folder_title')) + '</h3><p>' + h(t('folder_now', { name: St.folderName() })) + '</p><p><button type="button" data-act="pick-folder">' + h(t('pick_folder_again')) + '</button> <button type="button" data-act="reload">' + h(t('reload_folder')) + '</button></p>';
+    if (WEB) out += window.MPWeb.settingsHtml(); else out += '<h3>' + h(t('folder_title')) + '</h3><p>' + h(t('folder_now', { name: St.folderName() })) + '</p><p><button type="button" data-act="pick-folder">' + h(t('pick_folder_again')) + '</button> <button type="button" data-act="reload">' + h(t('reload_folder')) + '</button></p>';
     if (u) {
       var L = u.changes.list.slice().reverse().slice(0, 60);
       out += '<h3 id="changes">' + h(t('changes_title', { name: u.profile.name })) + '</h3><p class="gist">' + h(t('changes_gist')) + '</p><ul class="list changes">' + L.map(function (c) {
@@ -975,6 +980,7 @@
   // EVENTS
   // =========================================================
   function act(name, el) {
+    if (WEB && window.MPWeb.act(name, el)) return;
     var u = me();
     switch (name) {
       case 'pick-folder':
@@ -1101,7 +1107,7 @@
   document.addEventListener('click', function (e) {
     var b = e.target.closest('button, a');
     if (!b || b.disabled) return;
-    if (b.dataset.lang) { lang = b.dataset.lang; lsSet('mealplanner:lang', lang); if (St.folderName()) { St.setSetting('lang', lang); render(); } else { renderHeader(); showConnectAgain(); } return; }
+    if (b.dataset.lang) { lang = b.dataset.lang; lsSet('mealplanner:lang', lang); if (St.folderName()) { St.setSetting('lang', lang); render(); } else if (WEB) { renderHeader(); window.MPWeb.redraw(); } else { renderHeader(); showConnectAgain(); } return; }
     if (b.dataset.view) { go(b.dataset.view); return; }
     if (b.dataset.act) { e.preventDefault(); act(b.dataset.act, b); }
   });
@@ -1160,10 +1166,16 @@
   // ---------- start ----------
   function boot() {
     lang = lsGet('mealplanner:lang') || ((navigator.language || '').indexOf('cs') === 0 ? 'cs' : 'en');
+    if (WEB) { renderHeader(); window.MPWeb.start(); return; }  // web app: home page and account first (app/js/web.js)
     renderHeader();
     if (!St.hasFolderApi()) { showConnect('none'); return; }
     St.reconnect().then(function (s) { connectState = s; if (s === 'granted') afterLoad(); else showConnect(s); }, function (e) { showConnect('none', connectError(e)); });
   }
-  window.MPApp = { t: t, go: go, state: function () { return { view: view, viewArg: viewArg, lang: lang, drafts: drafts }; } };
+  window.MPApp = { t: t, go: go, state: function () { return { view: view, viewArg: viewArg, lang: lang, drafts: drafts }; },
+    // hooks for the web app (app/js/web.js)
+    h: h, fmt: fmt, render: render, renderHeader: renderHeader, afterLoad: afterLoad, showToast: showToast, me: me, lsGet: lsGet, lsSet: lsSet,
+    setLang: function (l) { lang = l; }, getLang: function () { return lang; },
+    useDrafts: function (key) { DRAFTS_KEY = key; var d = lsGet(key); drafts = d && typeof d === 'object' ? d : {}; },
+    typedDrafts: typedDrafts, targetsExplain: targetsExplain, targetsOf: targetsOf, newestWeight: newestWeight };
   boot();
 })();

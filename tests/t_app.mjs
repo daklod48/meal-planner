@@ -2,7 +2,7 @@
 // Run from MealPlanner/: LC_ALL=C.UTF-8 node tests/t_app.mjs
 // The app runs on a local web server; its folder is the browser's private file system (same FileSystem API as a real
 // folder, without the permission pop-up). Files the app writes are copied to tests/out/ at the end for the Python checks.
-import { chromium } from '/opt/npm-tools/node_modules/playwright/index.mjs';
+import { chromium } from './pw.mjs';
 import http from 'http';
 import fs from 'fs';
 import path from 'path';

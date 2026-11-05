@@ -158,3 +158,9 @@ details.danger summary { color: var(--error); }
   .main { padding: .6rem; }
   .card { padding: .9rem; }
 }
+
+/* 2026-11-05: where each daily target comes from (profile form, plan form; folder app and web app) */
+.targets-src { list-style: none; padding: 0; margin: .5rem 0; display: grid; gap: .35rem; }
+.targets-src li { line-height: 1.45; }
+details.why-targets { margin: .2rem 0 1rem; }
+details.why-targets summary { cursor: pointer; color: var(--accent); font-weight: 600; min-height: 2.75rem; display: flex; align-items: center; }

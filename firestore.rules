@@ -1,0 +1,32 @@
+rules_version = '2';
+
+// Meal Planner web app: Firestore security rules (2026-11-05).
+// Paste into Firebase console > Firestore Database > Rules > Publish (FIREBASE-SETUP.md step 5).
+//
+// The browser code is public, so these rules, not the code, protect the data:
+// - Each account (also the anonymous demo account) reads and writes only its own space: spaces/{its uid}/files/...
+// - A file record holds exactly: path (text), text (the file, at most about 900 kB), updated (server time), device (text).
+// - Nothing else exists: every other path is closed.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function validFile() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['path', 'text', 'updated', 'device'])
+        && d.path is string && d.path.size() > 5 && d.path.size() < 300 && d.path.matches('data/.*')
+        && d.text is string && d.text.size() < 900000
+        && d.updated == request.time
+        && d.device is string && d.device.size() < 40;
+    }
+
+    match /spaces/{uid}/files/{fileId} {
+      allow read: if isOwner(uid);
+      allow create, update: if isOwner(uid) && validFile();
+      allow delete: if isOwner(uid);
+    }
+  }
+}
