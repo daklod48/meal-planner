@@ -1,0 +1,10 @@
+[
+ {"run": 0, "date": "2026-11-05", "branch": "main", "what_changed": "Baseline: the web app as built in this session (home page, accounts, demo, Firestore sync, DRI targets).",
+  "innovation": null, "references": [], "scores": {"beauty": 6, "clarity": 5, "flow": 5, "trust": 7, "mobile": 4, "speed": 9, "accessibility": 4, "delight": 6}, "total": 46,
+  "flaws": ["Phone: header, language and account buttons and a 3-row tab bar take the first 338 px of every signed-in screen; most of these controls are under 44 px.",
+            "Phone Result: the Everything found table is squeezed and cut off on the right; each pick is buried under a long technical notes paragraph.",
+            "Getting a plan dead-ends in Settings (download a request, run Claude on another computer, upload a result); the demo result shows a date after today."],
+  "size": {"app_js_kb": 0, "note": "baseline"}, "tests": "all pass: 1,401 original checks plus t_web 41 + 43, t_rules 23",
+  "verdict": "baseline", "preview": "LAB/captures/run-00/ (24 screenshots + metrics.json)", "scorer": "independent subagent (saw only captures, metrics.json, RUBRIC.md)",
+  "tools": ["Playwright Chromium captures (LAB/capture.mjs)", "independent scorer subagent"]}
+]

@@ -1,0 +1,380 @@
+{
+ "run": "00",
+ "date": "2026-11-05T08:19:55.024Z",
+ "sizes": {
+  "phone": {
+   "screens": {
+    "01-home": {
+     "taps": 5,
+     "taps_under_44px": 2,
+     "examples_small": [
+      "English",
+      "Čeština"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 103
+    },
+    "02-sign-up": {
+     "taps": 12,
+     "taps_under_44px": 4,
+     "examples_small": [
+      "English",
+      "Čeština",
+      "← Home",
+      "Try the demo account"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 106
+    },
+    "03-new-plan": {
+     "taps": 18,
+     "taps_under_44px": 10,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 338
+    },
+    "04-new-plan-cook-form": {
+     "taps": 27,
+     "taps_under_44px": 19,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": -312
+    },
+    "05-profiles": {
+     "taps": 16,
+     "taps_under_44px": 14,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 338
+    },
+    "06-profile-edit": {
+     "taps": 53,
+     "taps_under_44px": 49,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 338
+    },
+    "07-requests": {
+     "taps": 15,
+     "taps_under_44px": 12,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 338
+    },
+    "08-result": {
+     "taps": 24,
+     "taps_under_44px": 22,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 338
+    },
+    "09-history": {
+     "taps": 36,
+     "taps_under_44px": 34,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 338
+    },
+    "10-foods": {
+     "taps": 39,
+     "taps_under_44px": 14,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 338
+    },
+    "11-shops": {
+     "taps": 225,
+     "taps_under_44px": 12,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 338
+    },
+    "12-settings": {
+     "taps": 32,
+     "taps_under_44px": 23,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 338
+    }
+   },
+   "home_ready_ms": 123,
+   "home_bytes": 267403,
+   "demo_ready_ms": 359,
+   "total_bytes": 467094,
+   "console_errors": []
+  },
+  "laptop": {
+   "screens": {
+    "01-home": {
+     "taps": 5,
+     "taps_under_44px": 2,
+     "examples_small": [
+      "English",
+      "Čeština"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 113
+    },
+    "02-sign-up": {
+     "taps": 12,
+     "taps_under_44px": 4,
+     "examples_small": [
+      "English",
+      "Čeština",
+      "← Home",
+      "Try the demo account"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 108
+    },
+    "03-new-plan": {
+     "taps": 18,
+     "taps_under_44px": 10,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 138
+    },
+    "04-new-plan-cook-form": {
+     "taps": 27,
+     "taps_under_44px": 19,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 138
+    },
+    "05-profiles": {
+     "taps": 16,
+     "taps_under_44px": 14,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 138
+    },
+    "06-profile-edit": {
+     "taps": 53,
+     "taps_under_44px": 49,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 138
+    },
+    "07-requests": {
+     "taps": 15,
+     "taps_under_44px": 13,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 138
+    },
+    "08-result": {
+     "taps": 24,
+     "taps_under_44px": 22,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 138
+    },
+    "09-history": {
+     "taps": 36,
+     "taps_under_44px": 34,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 138
+    },
+    "10-foods": {
+     "taps": 39,
+     "taps_under_44px": 14,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 138
+    },
+    "11-shops": {
+     "taps": 225,
+     "taps_under_44px": 12,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 138
+    },
+    "12-settings": {
+     "taps": 32,
+     "taps_under_44px": 23,
+     "examples_small": [
+      "Tomáš Dvořák",
+      "English",
+      "Čeština",
+      "Profiles",
+      "New plan",
+      "Requests and results"
+     ],
+     "texts_under_12px": 0,
+     "sideways_scroll": false,
+     "first_content_y": 138
+    }
+   },
+   "home_ready_ms": 107,
+   "home_bytes": 267403,
+   "demo_ready_ms": 423,
+   "total_bytes": 467094,
+   "console_errors": []
+  }
+ },
+ "code_kb": {
+  "app.js": 103,
+  "web.js": 19,
+  "i18n.js": 63,
+  "app.css": 11,
+  "web.css": 3,
+  "firebase (loaded only when the config is set)": 926
+ }
+}
