@@ -1,0 +1,7 @@
+{"id":"REQ-20261019-100000-tomas-dvorak","created":"2026-10-19T10:00:00+02:00","status":"waiting","user_id":"tomas-dvorak","user_name":"Tomáš Dvořák","lang":"en",
+ "mode":"cook","start_date":"2026-10-20","days":7,"meals_per_day":3,"budget_total":1400,"budget_per_day":200,
+ "location":{"id":"L-0001","name":"Blanice kolej","address":"Chemická 955","walk_limit_min":30},"wishes":"",
+ "cook":{"cart_shop":"auto","max_cook_min_per_day":40},"order":{},"eatout":{},
+ "targets":{"protein_g":120,"kcal":2900,"mode":"gain"},"weights":{"price":40,"speed":30,"taste":20,"time":10},
+ "cards":["lidl-plus","tesco-clubcard"],"cards_named":[],"accounts":[{"id":"A-0001","shop":"rohlik","account_name":"Tomáš Dvořák","email":""}],
+ "likes":"","dislikes":"tuňák","allergies":"","rules":{"cart_only_never_pay":true}}

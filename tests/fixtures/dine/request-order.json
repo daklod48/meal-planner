@@ -1,0 +1,52 @@
+{
+ "id": "REQ-20261019-120000-test",
+ "version": 1,
+ "created": "2026-10-19T12:00:00+02:00",
+ "status": "waiting",
+ "user_id": "demo-user",
+ "user_name": "Tomáš",
+ "lang": "en",
+ "mode": "order",
+ "start_date": "2026-10-19",
+ "days": 3,
+ "meals_per_day": 2,
+ "budget_total": 1200,
+ "budget_per_day": 400,
+ "location": {
+  "id": "L-0001",
+  "name": "Blanice kolej",
+  "address": "",
+  "walk_limit_min": 15
+ },
+ "wishes": "",
+ "cook": null,
+ "order": {
+  "max_delivery_min": 45
+ },
+ "eatout": null,
+ "targets": {
+  "protein_g": 150,
+  "kcal": 2500,
+  "mode": "typed",
+  "protein_g_per_kg": 2.11,
+  "weight_kg": 71
+ },
+ "weights": {
+  "price": 40,
+  "speed": 30,
+  "taste": 20,
+  "time": 10
+ },
+ "cards": [],
+ "cards_named": [],
+ "accounts": [],
+ "likes": "",
+ "dislikes": "",
+ "allergies": "",
+ "rules": {
+  "cart_only_never_pay": true,
+  "replan_if_cart_off_pct": 10,
+  "stale_days": 14,
+  "planner_version": "1.0"
+ }
+}

@@ -1,0 +1,10 @@
+kind	venue	venue_name	lat	lng	eta_min	eta_max	fee	min_order	service_pct	service_min	open	item	dish	price	weight	desc	url	rest
+V	8784	Restaurace u Krčáku									daily menu 19.10.2026						https://www.menicka.cz/8784-restaurace-u-krcaku.html	R037
+D	8784											8784-1	šťavnatá uzená krkovička bravur vyuzená na bukovém dřevě s čočkou	174	150g			
+D	8784											8784-3	kuřecí čína na orestované čerstvé zelenině, vařená jasmínová rýže	172	150g			
+D	8784											8784-4	hovězí flank steak z grilu (irsko-volné chovy) s brusinkami rukol	216	180g			
+V	2226	Restaurace Maják									daily menu 19.10.2026						https://www.menicka.cz/2226-restaurace-majak.html	R041
+D	2226											2226-1	Hovězí maso vařené, rajská omáčka, houskové knedlíky	189	150g			
+D	2226											2226-3	Domácí sekaná, bramborová kaše, kyselá okurka	169	150g			
+D	2226											2226-4	Kuřecí nudličky na zeleném curry, dušená rýže	169	150g			
+L																menicka: listed 4, no_menu_today 0, read 4, kept 2 (fixture from the 19/10/2026 lunch menus)		

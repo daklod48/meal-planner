@@ -1,0 +1,7 @@
+tests/out/
+__pycache__/
+*.pyc
+data/
+LAB/captures/raw/
+node_modules/
+_PAST-WORK/

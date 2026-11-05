@@ -1,0 +1,22 @@
+kind	venue	venue_name	lat	lng	eta_min	eta_max	fee	min_order	service_pct	service_min	open	item	dish	price	weight	desc	url
+V	mcpizza	McPizza	50.0224313	14.4411058	40	50	0	140	0	0	Open until 21:45						https://wolt.com/cs/cze/prague/restaurant/mcpizza
+D	mcpizza											65e03d8d5821f2ef377df047	Mc Kebab Doner klasik	150		150g maso, bílé zelí, červené zelí, ledový salát, rajče, salátová okurka, cibule, 1x omáčka	
+D	mcpizza											65e03d8d5821f2ef377df04e	Malý Kebab Box	150		150g maso, bílé zelí, červené zelí, ledový salát, rajče, salátová okurka, cibule, 1x omáčka	
+D	mcpizza											65e03d8d5821f2ef377df07a	Mc Kebab Pizza	220		Těsto z pravé italské mouky a kvasnic. Naše rajčatové sugo (čerstvé bylinky a rajčata) mozzarella, č	
+D	mcpizza											3f9c1313bb31a262c7b25b68	Malý Kebab Box S Hranolky	165		150g maso, bílé zelí, červené zelí, ledový salát, rajče, salátová okurka, cibule, 1x omáčka	
+V	restaurace-kobra	Restaurace KOBRA	50.0316968	14.4282958	40	50	0	140	0	0	Open until 17:00						https://wolt.com/cs/cze/prague/restaurant/restaurace-kobra
+D	restaurace-kobra											ac434136c8a806982f74b268	250g Tagliatelle s kuřecím masem a špenátem, sypané sýrem (1,3,7)	164			
+D	restaurace-kobra											36d7d4f5e08581dcc7a0b66f	150g Kuřecí nudličky s omáčkou na kari, vařená rýže	169			
+D	restaurace-kobra											0ac863e6f6700406a9091e04	150g Kuřecí steak zapečené se sýrem a šunkou, bramborové hranolky	179			
+D	restaurace-kobra											fa448c0a78bf6d1f2b9b6bc7	150g Kuřecí steak na šalvějí, bramborové dukátky	179			
+D	restaurace-kobra											2c8d873b803573112ed751fa	150g Holandský řízek s bramborovou kaší, kyselá okurka	164			
+V	solcovna	Šolcovna	50.037199	14.514929	25	35	0	140	0	0	Open until 20:00						https://wolt.com/cs/cze/prague/restaurant/solcovna
+D	solcovna											6426a4df601d198e838f7d51	Mix grill ( vepřová panenka, kuřecí prsa )	230	300g	1	
+D	solcovna											6426a4ab601d198e838f7d34	Steak z kuřecích prsou na bylinkách	189	200g	1	
+D	solcovna											6426a53f1795d7042438e5de	Mix řízků (kuřecí prsa, vepřové karé), hranolky, tatarská omáčka, česnekový dip	359	400g	1,3,7	
+D	solcovna											c083748d89191cf98ae11de2	Smažený sýr gouda	179	120g	1,3,7	
+V	ho-sen-quan-lotus	Ho Sen Quan - Lotus	50.00298603	14.47289248	35	45	0	140	0	0	Open until 21:00						https://wolt.com/cs/cze/prague/restaurant/ho-sen-quan-lotus
+D	ho-sen-quan-lotus											2c7c0de13604231bfc81bfe3	Pečená kuřecí prsa s kari omáčkou se zeleninou a rýží	260	500g		
+D	ho-sen-quan-lotus											8bc7334e7089aa49190ff2c7	Hovězí kari se zeleninou a rýží	320	500g		
+D	ho-sen-quan-lotus											49b79f7d6cfef44fba5b1702	Bun Bo Nam Bo s kuřecím	230		Mixed noodles with stir-fried chicken breast with fresh salad, homemade soy sauce with rice noodles.	
+L																wolt: listed 231, too_slow 50, read 180, failed 1, dishes 9371, dishes_estimated 3349, with_meals 158, kept 20 (fixture keeps 4)	

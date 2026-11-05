@@ -1,0 +1,34 @@
+term	id	name	price	original_price	amount	in_stock	kcal	protein
+hotová jídla	1479242	Rana Ravioli s rajčaty a mozzarellou	69.9	89.9	250 g	true	266	11
+hotová jídla	1374905	Rohlik.cz Španělský ptáček s rýží	127.4	149.9	0,52 kg	true	91	5.6
+hotová jídla	1403046	Libeřské lahůdky Masový karbanátek s bramborovou kaší	124.9		365 g	true	175	8.2
+hotová jídla	1374831	Rohlik.cz Svíčková omáčka s hovězím a knedlíkem	135.9	159.9	0,525 kg	true	128	7.1
+hotová jídla	1441907	Rohlík.cz Caesar salát	152.9	179.9	280 g	true	213	10.3
+hotové jídlo kuřecí	1410625	Dr.Oetker Feliciana Pizza Salame a Chorizo	69.9	90.9	320 g	true	265	9.7
+hotové jídlo kuřecí	1331771	Comrico Kuřecí mini řízky	49.9		200 g	true	239	16.2
+hotové jídlo kuřecí	1374849	Rohlik.cz Kuřecí paprikáš s těstovinami	127.4	149.9	0,53 kg	true	159	8.7
+hotové jídlo kuřecí	1363723	Konečně vývar Konečně kuřecí consommé	139.9		450 ml	true	21	1
+hotové jídlo kuřecí	1448020	Krůtí spodní stehno od českého výrobce	173.88		cca 1,2 kg	true		
+hotové jídlo hovězí	1473503	Rohlik.cz Hovězí vývar	129.9	199.9	0,6 l	true	16	1.3
+hotové jídlo hovězí	1374859	Rohlik.cz Rajská omáčka s hovězím a knedlíkem	140.13	164.9	0,52 kg	true	153	7.6
+hotové jídlo hovězí	1473416	Pappudia Hovězí polévka	44.91	49.9	400 g	true	55	3.9
+hotové jídlo hovězí	1484561	Naše maso Hovězí kližka ossobuco s fermentovaným pepřem a tymiánem na dušení	449.93		cca 0,75 kg	true	238	18
+hotové jídlo hovězí	1473419	Pappudia Hovězí maso v rajské omáčce s těstovinami	89.91	99.9	450 g	true	91	5.8
+hotové jídlo vepřové	1468699	Apetit Katův šleh z vepřového masa a rýže	93.9		400 g	true	114	4
+hotové jídlo vepřové	1451109	Naše maso Pečené vepřové	264.9		360 g	true	231	13.4
+hotové jídlo vepřové	1451113	Pizza Nuova Ragù Bolognese	249.9		360 g	true	138	6.5
+hotové jídlo vepřové	1484180	Popote BIO Kapsička vepřová šunka	85.41	94.9	60 g	true	103	10.8
+hotové jídlo vepřové	1374863	Rohlik.cz Segedínský guláš s vepřovým a knedlíkem	127.4	149.9	480 g	true	182	8.4
+Rohlík Bistro	1413245	Rohlíkova Bageta francouzská rustikální	36.5	45.9	280 g	true	270	9.3
+Rohlík Bistro	1438022	Buchtičky se šodó z Cukrárny Myšák	195.41	229.9	380 g	true	199	5.1
+Rohlík Bistro	1441342	Hovězí vývar s játrovými knedlíčky od Jana Bureše (1 porce)	110.4	129.9	300 ml	true	106	3.6
+Rohlík Bistro	1481453	Likérová špička	84.9	99.9	110 g	true	397	4
+Rohlík Bistro	1412422	Kuřecí řízek s bramborovou kaší od Honzy Bureše	212.39	249.9	450 g	true	234	8.7
+Libeřské lahůdky	1377583	Libeřské lahůdky Kuřecí řízek s poctivým bramborovým salátem	124.9		350 g	true	197	10
+Libeřské lahůdky	1377585	Libeřské lahůdky Henri vejce	55.9		200 g	true	172	6
+Libeřské lahůdky	1377669	Libeřské lahůdky Chlebíček šunkový na bramborovém salátu	82.9		2 ks	true	206	8.1
+Libeřské lahůdky	1403111	Libeřské lahůdky Smažený květák s bramborem a tatarkou	124.9		390 g	true	180	4.1
+hotové jídlo s rýží	1468699	Apetit Katův šleh z vepřového masa a rýže	93.9		400 g	true	114	4
+hotové jídlo s rýží	1439994	Bonduelle Good lunch s rýží	79.9	109.9	250 g	true	143	4.2
+hotové jídlo s rýží	1484545	Vitana Jasmínová rýže ve varných sáčcích	83.9		0,8 kg	true	355	8.4
+hotové jídlo s rýží	1468700	Simply Fresh Kuřecí kung pao s jasmínovou rýží	104.9		400 g	true	126	5.9

@@ -1,0 +1,330 @@
+{
+ "version": 1,
+ "note": "Cook mode shopping candidates. term = what the run searches at Rohlík, Košík and Tesco; kupi = the word for kupi.cz (leaflets of Albert, Billa, Lidl, Penny, Kaufland, Norma). has = every word must be in the product name; not = no word may be in it; min_protein (g per 100 g) and max_kcal catch wrong products (18/10: ice cream for 'tvaroh'). pantry items are not bought by the optimiser. Edited by Cowork chats only. terms_by_shop = another search word for one shop (Tesco's search returns butter for 'vejce M 10 ks'). has_any = at least one of these words must be in the name (19/10 run: Tesco answered 'mražená zelenina směs' with bananas).",
+ "staples": [
+  {
+   "key": "tvaroh",
+   "term": "tvaroh odtučněný",
+   "kupi": "tvaroh",
+   "has": [
+    "tvaroh"
+   ],
+   "not": [
+    "zmrzl",
+    "dezert",
+    "ovoc",
+    "krém",
+    "ochuc",
+    "jahod",
+    "vanil",
+    "pomazán",
+    "tvaroháč"
+   ],
+   "min_protein": 9,
+   "max_kcal": 120
+  },
+  {
+   "key": "kureci-prsa",
+   "term": "kuřecí prsní řízky",
+   "kupi": "kuřecí prsní řízky",
+   "has": [
+    "kuř",
+    "prs"
+   ],
+   "not": [
+    "obal",
+    "marin",
+    "nugget",
+    "šunk",
+    "uzen",
+    "gril",
+    "s kost",
+    "plněn"
+   ],
+   "min_protein": 18,
+   "max_kcal": 150
+  },
+  {
+   "key": "vejce",
+   "term": "vejce M 10 ks",
+   "kupi": "vejce",
+   "has": [
+    "vejce"
+   ],
+   "not": [
+    "čokol",
+    "křepel",
+    "likér",
+    "sušen",
+    "kinder",
+    "vaječn",
+    "pomazán",
+    "pečen"
+   ],
+   "min_protein": 10,
+   "max_kcal": 170,
+   "eggs": true,
+   "terms_by_shop": {
+    "tesco": "vejce"
+   }
+  },
+  {
+   "key": "ovesne-vlocky",
+   "term": "ovesné vločky",
+   "kupi": "ovesné vločky",
+   "has": [
+    "vločk"
+   ],
+   "not": [
+    "kaše",
+    "ochuc",
+    "příchu",
+    "ovoc",
+    "müsli",
+    "musli",
+    "tyčink",
+    "kakao",
+    "čokol",
+    "jahod"
+   ],
+   "min_protein": 10,
+   "max_kcal": 420
+  },
+  {
+   "key": "ryze",
+   "term": "rýže dlouhozrnná",
+   "kupi": "rýže",
+   "has": [
+    "rýž"
+   ],
+   "not": [
+    "chips",
+    "pudink",
+    "nápoj",
+    "mléčn",
+    "chlebíč",
+    "oplat",
+    "křup",
+    "hotov",
+    "mouk"
+   ],
+   "min_protein": 5,
+   "max_kcal": 380
+  },
+  {
+   "key": "testoviny",
+   "term": "těstoviny semolinové",
+   "kupi": "těstoviny",
+   "has": [],
+   "not": [
+    "hotov",
+    "omáčk",
+    "polévk",
+    "salát",
+    "plněn",
+    "tortellin",
+    "bezlepk"
+   ],
+   "min_protein": 10,
+   "max_kcal": 380
+  },
+  {
+   "key": "skyr",
+   "term": "skyr bílý",
+   "kupi": "skyr",
+   "has": [
+    "skyr"
+   ],
+   "not": [
+    "ovoc",
+    "příchu",
+    "jahod",
+    "vanil",
+    "nápoj",
+    "drink",
+    "ochuc",
+    "borůvk",
+    "malin",
+    "mango",
+    "čokol"
+   ],
+   "min_protein": 9,
+   "max_kcal": 100
+  },
+  {
+   "key": "tunak",
+   "term": "tuňák ve vlastní šťávě",
+   "kupi": "tuňák",
+   "has": [
+    "tuňák"
+   ],
+   "not": [
+    "salát",
+    "pomazán",
+    "omáčk",
+    "rajč",
+    "chilli",
+    "fazol"
+   ],
+   "min_protein": 18,
+   "max_kcal": 200
+  },
+  {
+   "key": "cocka",
+   "term": "čočka červená",
+   "kupi": "čočka",
+   "has": [
+    "čočk"
+   ],
+   "not": [
+    "polévk",
+    "hotov",
+    "salát",
+    "chips",
+    "těstovin",
+    "konzerv",
+    "pyré",
+    "dhal"
+   ],
+   "min_protein": 20,
+   "max_kcal": 380
+  },
+  {
+   "key": "mleko",
+   "term": "mléko polotučné 1 l",
+   "kupi": "mléko polotučné",
+   "has": [
+    "mléko"
+   ],
+   "not": [
+    "kokos",
+    "ovesn",
+    "mandl",
+    "sój",
+    "rýž",
+    "kondenz",
+    "sušen",
+    "čokol",
+    "kakao",
+    "jahod",
+    "kozí",
+    "dětsk",
+    "zahušť"
+   ],
+   "min_protein": 3,
+   "max_kcal": 70
+  },
+  {
+   "key": "chleb",
+   "term": "chléb žitný",
+   "kupi": "chléb",
+   "has": [
+    "chléb"
+   ],
+   "not": [
+    "knäck",
+    "křehk",
+    "strouhan",
+    "trhan",
+    "bezlepk"
+   ],
+   "min_protein": 5,
+   "max_kcal": 300
+  },
+  {
+   "key": "eidam",
+   "term": "eidam 30 % plátky",
+   "kupi": "eidam",
+   "has": [
+    "eidam"
+   ],
+   "not": [
+    "uzen",
+    "tavěn",
+    "smažen"
+   ],
+   "min_protein": 22,
+   "max_kcal": 340
+  },
+  {
+   "key": "arasidovy-krem",
+   "term": "arašídový krém 100 %",
+   "kupi": "arašídové máslo",
+   "has": [
+    "araš"
+   ],
+   "not": [
+    "čokol",
+    "kakao",
+    "slaz",
+    "med",
+    "lísk",
+    "tyčink",
+    "křup",
+    "oleji"
+   ],
+   "min_protein": 20,
+   "max_kcal": 660
+  },
+  {
+   "key": "zelenina",
+   "term": "mražená zelenina směs",
+   "kupi": "mražená zelenina",
+   "has": [],
+   "not": [
+    "omáčk",
+    "pizza",
+    "polévk",
+    "hranol",
+    "rizot",
+    "obal",
+    "smažen",
+    "sýr",
+    "ovoc",
+    "směs na",
+    "knedl",
+    "banán",
+    "mandarin",
+    "jabl",
+    "okurk"
+   ],
+   "min_protein": 1,
+   "max_kcal": 120,
+   "has_any": [
+    "zelenin",
+    "hrášek",
+    "hrach",
+    "brokolic",
+    "špenát",
+    "fazolk",
+    "fazolov",
+    "mrkev",
+    "karotk",
+    "kukuřic",
+    "paprik",
+    "květák",
+    "kapust",
+    "cuketa",
+    "lečo"
+   ],
+   "terms_by_shop": {
+    "tesco": "zeleninová směs mražená"
+   }
+  }
+ ],
+ "pantry": [
+  "olej",
+  "sůl",
+  "pepř",
+  "koření",
+  "česnek",
+  "cibule"
+ ],
+ "eggs_edible_g": {
+  "note": "estimate, label estimate: edible grams per egg = the EU weight-class lower bound with shell (Commission Regulation (EC) No 589/2008, Art. 4: XL >= 73 g, L >= 63 g, M >= 53 g; S has no lower bound, 48 g assumed) x 0.9, because about 10 % of an egg is shell (an assumption, not measured). Unknown size = M.",
+  "XL": 66,
+  "L": 57,
+  "M": 48,
+  "S": 43
+ }
+}

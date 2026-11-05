@@ -1,0 +1,1 @@
+{ "test_only": false, "measure": true, "note": "test_only true = do section A (reach check) only, then stop. measure true = add the measure line to the run log. Changed by Cowork chats only." }

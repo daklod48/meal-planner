@@ -1,0 +1,1604 @@
+{
+ "version": 1,
+ "about": "Estimates energy and protein of a restaurant or delivery dish that has no nutrition label (Wolt, foodora and daily menus publish none, 19/10/2026). A dish is matched by its Czech or English words (a rule word must START a word of the dish name: 'krut' matches 'krůtí' but not 'krutonky'; a word ending in a space must be the whole word) to a dish TYPE; a type is a mix of COMPONENTS in grams for one usual portion; every component's values per 100 g come from USDA FoodData Central, Food and Nutrient Database for Dietary Studies (FNDDS), read 19/10/2026 at https://fdc.nal.usda.gov/food-details/<fdc>/nutrients. The weight on the menu scales the whole mix; a daily-menu weight such as '150g Španělský ptáček' is the MEAT weight (Czech custom) and sets only the first component. Everything this file produces is labelled 'estimate'. Used by tools/dine.py and, for the shortlist only, by tools/browser/dish-core.js (same rules; tests/t_dine.py proves they agree).",
+ "source": "U.S. Department of Agriculture, Agricultural Research Service. (2024). FoodData Central: Food and Nutrient Database for Dietary Studies 2021-2023. https://fdc.nal.usda.gov/",
+ "components": {
+  "chicken": {
+   "fdc": 2705968,
+   "name": "Chicken breast, grilled without sauce, skin not eaten",
+   "kcal": 176,
+   "protein": 29.62
+  },
+  "chicken_breaded": {
+   "fdc": 2705975,
+   "name": "Chicken breast, fried, coated, prepared skinless, coating eaten, from raw",
+   "kcal": 219,
+   "protein": 24.56
+  },
+  "beef": {
+   "fdc": 2705824,
+   "name": "Beef, steak, NFS",
+   "kcal": 229,
+   "protein": 27.0
+  },
+  "beef_gravy": {
+   "fdc": 2706379,
+   "name": "Beef with gravy",
+   "kcal": 156,
+   "protein": 21.56
+  },
+  "pork": {
+   "fdc": 2705882,
+   "name": "Pork, roast",
+   "kcal": 181,
+   "protein": 26.63
+  },
+  "duck": {
+   "fdc": 2706140,
+   "name": "Duck, roasted, skin not eaten",
+   "kcal": 200,
+   "protein": 23.38
+  },
+  "salmon": {
+   "fdc": 2706286,
+   "name": "Fish, salmon, baked or broiled",
+   "kcal": 274,
+   "protein": 25.4
+  },
+  "fish_fried": {
+   "fdc": 2710784,
+   "name": "Fish fillet, fried as ingredient in sandwiches",
+   "kcal": 195,
+   "protein": 18.16
+  },
+  "shrimp": {
+   "fdc": 2706462,
+   "name": "Shrimp teriyaki",
+   "kcal": 120,
+   "protein": 21.62
+  },
+  "tofu": {
+   "fdc": 2707449,
+   "name": "Soybean curd, breaded, fried",
+   "kcal": 150,
+   "protein": 8.39
+  },
+  "cheese": {
+   "fdc": 2705787,
+   "name": "Topping from cheese pizza",
+   "kcal": 230,
+   "protein": 16.86
+  },
+  "cheese_fried": {
+   "fdc": 2705817,
+   "name": "Mozzarella sticks, breaded, baked, or fried",
+   "kcal": 325,
+   "protein": 14.75
+  },
+  "rice": {
+   "fdc": 2708404,
+   "name": "Rice, white, cooked, made with oil",
+   "kcal": 151,
+   "protein": 2.6
+  },
+  "potato_mash": {
+   "fdc": 2709500,
+   "name": "Potato, mashed, from restaurant",
+   "kcal": 138,
+   "protein": 2.07
+  },
+  "potato_boiled": {
+   "fdc": 2709385,
+   "name": "Potato, boiled, NFS",
+   "kcal": 126,
+   "protein": 1.87
+  },
+  "potato_roasted": {
+   "fdc": 2709402,
+   "name": "Potato, roasted, NFS",
+   "kcal": 126,
+   "protein": 1.87
+  },
+  "fries": {
+   "fdc": 2709463,
+   "name": "Potato, french fries, from frozen, fried",
+   "kcal": 225,
+   "protein": 2.5
+  },
+  "dumpling": {
+   "fdc": 2708344,
+   "name": "Dumpling, no meat",
+   "kcal": 125,
+   "protein": 3.45
+  },
+  "pasta": {
+   "fdc": 2708357,
+   "name": "Pasta, cooked",
+   "kcal": 157,
+   "protein": 5.76
+  },
+  "gnocchi": {
+   "fdc": 2708722,
+   "name": "Gnocchi, potato",
+   "kcal": 135,
+   "protein": 2.44
+  },
+  "veg": {
+   "fdc": 2710036,
+   "name": "Asian stir fry vegetables, cooked, fat added",
+   "kcal": 71,
+   "protein": 2.01
+  },
+  "salad_leaves": {
+   "fdc": 2709591,
+   "name": "Caesar salad, with romaine, no dressing",
+   "kcal": 77,
+   "protein": 4.0
+  },
+  "sauce_meat": {
+   "fdc": 2706470,
+   "name": "Spaghetti sauce with meat",
+   "kcal": 90,
+   "protein": 5.94
+  },
+  "curry_sauce": {
+   "fdc": 2710178,
+   "name": "Curry sauce",
+   "kcal": 95,
+   "protein": 1.39
+  },
+  "risotto": {
+   "fdc": 2709094,
+   "name": "Rice, white, with cheese and/or cream based sauce, fat added",
+   "kcal": 166,
+   "protein": 5.16
+  },
+  "hamburger": {
+   "fdc": 2706920,
+   "name": "Hamburger, NFS",
+   "kcal": 288,
+   "protein": 17.51
+  },
+  "chicken_burger": {
+   "fdc": 2707008,
+   "name": "Chicken fillet sandwich, fried, on white bun",
+   "kcal": 269,
+   "protein": 12.45
+  },
+  "pizza_meat": {
+   "fdc": 2708636,
+   "name": "Pizza with pepperoni, from frozen, medium crust",
+   "kcal": 275,
+   "protein": 11.46
+  },
+  "pizza_cheese": {
+   "fdc": 2708623,
+   "name": "Pizza, extra cheese, thick crust",
+   "kcal": 272,
+   "protein": 11.41
+  },
+  "gyro": {
+   "fdc": 2706962,
+   "name": "Gyro sandwich",
+   "kcal": 184,
+   "protein": 11.24
+  },
+  "wrap_grilled": {
+   "fdc": 2707017,
+   "name": "Chicken fillet wrap sandwich, grilled, from fast food",
+   "kcal": 252,
+   "protein": 20.83
+  },
+  "wrap_fried": {
+   "fdc": 2707016,
+   "name": "Chicken fillet wrap sandwich, fried, from fast food",
+   "kcal": 299,
+   "protein": 12.68
+  },
+  "wrap_veg": {
+   "fdc": 2709136,
+   "name": "Vegetable sandwich wrap",
+   "kcal": 160,
+   "protein": 5.42
+  },
+  "burrito": {
+   "fdc": 2708543,
+   "name": "Burrito, chicken, cheese",
+   "kcal": 244,
+   "protein": 13.74
+  },
+  "quesadilla": {
+   "fdc": 2708593,
+   "name": "Quesadilla, chicken",
+   "kcal": 287,
+   "protein": 14.45
+  },
+  "sandwich": {
+   "fdc": 2706881,
+   "name": "Sandwich wrap, NFS",
+   "kcal": 232,
+   "protein": 12.77
+  },
+  "falafel_sandwich": {
+   "fdc": 2707483,
+   "name": "Falafel sandwich",
+   "kcal": 265,
+   "protein": 6.22
+  },
+  "nuggets": {
+   "fdc": 2706093,
+   "name": "Chicken nuggets, from fast food",
+   "kcal": 307,
+   "protein": 15.92
+  },
+  "wings": {
+   "fdc": 2706069,
+   "name": "Chicken wing, baked, coated",
+   "kcal": 260,
+   "protein": 21.42
+  },
+  "fried_rice": {
+   "fdc": 2708953,
+   "name": "Rice, fried, with chicken",
+   "kcal": 173,
+   "protein": 7.28
+  },
+  "pad_thai": {
+   "fdc": 2708806,
+   "name": "Pad Thai with chicken",
+   "kcal": 154,
+   "protein": 8.13
+  },
+  "ramen": {
+   "fdc": 2709155,
+   "name": "Ramen bowl with chicken",
+   "kcal": 126,
+   "protein": 7.04
+  },
+  "lasagna": {
+   "fdc": 2708752,
+   "name": "Lasagna with meat, from restaurant",
+   "kcal": 185,
+   "protein": 10.83
+  },
+  "pasta_sauce": {
+   "fdc": 2708828,
+   "name": "Pasta with sauce, NFS",
+   "kcal": 125,
+   "protein": 5.86
+  },
+  "sushi": {
+   "fdc": 2708959,
+   "name": "Sushi, NFS",
+   "kcal": 94,
+   "protein": 2.92
+  },
+  "sushi_tuna": {
+   "fdc": 2708965,
+   "name": "Sushi roll tuna",
+   "kcal": 97,
+   "protein": 7.4
+  },
+  "teriyaki_chicken": {
+   "fdc": 2706433,
+   "name": "Chicken or turkey with teriyaki",
+   "kcal": 163,
+   "protein": 25.73
+  },
+  "pancakes": {
+   "fdc": 2708294,
+   "name": "Pancakes, NFS",
+   "kcal": 282,
+   "protein": 7.41
+  }
+ },
+ "exclude_strong": [
+  "napoj",
+  "drink",
+  "cola",
+  "pepsi",
+  "fanta",
+  "sprite",
+  "kofola",
+  "limonad",
+  "dzus",
+  "juice",
+  "smoothie",
+  "shot",
+  "kava",
+  "coffee",
+  "espresso",
+  "latte",
+  "cappuccino",
+  "caj ",
+  "ice tea",
+  "iced tea",
+  "pivo",
+  "beer",
+  "vino",
+  "wine",
+  "voda",
+  "water",
+  "mattoni",
+  "rajec",
+  "dezert",
+  "dessert",
+  "dort",
+  "cheesecake",
+  "zmrzlin",
+  "ice cream",
+  "sorbet",
+  "cookie",
+  "susenk",
+  "brownie",
+  "donut",
+  "kobliha",
+  "croissant",
+  "tiramisu",
+  "panna cotta",
+  "pudink",
+  "puding",
+  "acai",
+  "granol",
+  "ovesn",
+  "jogurtova misk",
+  "jogurtovy bowl",
+  "polevk",
+  "soup",
+  "vyvar",
+  "krem ",
+  "broth",
+  "pribor",
+  "cutlery",
+  "obal",
+  "taska",
+  "salek",
+  "supershot",
+  "steakhouse fries",
+  "pizza puffs",
+  "papad",
+  "naan",
+  "roti ",
+  "chapati",
+  "paratha",
+  "bagetka",
+  "baklava",
+  "tartalet",
+  "kapsa",
+  "nem ",
+  "zavitk",
+  "spring roll",
+  "jarni zavit",
+  "sashimi",
+  "tatarak",
+  "tartar",
+  "carpacc",
+  "miso ",
+  "shiru",
+  "omacek",
+  "omacky",
+  "miska na",
+  "jr menu",
+  "junior menu",
+  "detsk",
+  "happy meal",
+  "kids",
+  "rustikal",
+  "francouzska bageta",
+  "bageta francouzsk",
+  "samotna bageta",
+  "chlebicek",
+  "kyblik",
+  "bucket",
+  "steakove hranol",
+  "steakove brambor",
+  "syrova baget",
+  "syrove baget",
+  "brodo",
+  "pizza pane",
+  "focacc",
+  "pizzovy chleb",
+  "pizza chleb",
+  "pro 2 ",
+  "pro 3 ",
+  "pro 4 ",
+  "pro 5 ",
+  "pro 6 ",
+  "pro dva",
+  "pro tri ",
+  "pro ctyri",
+  "for 2 ",
+  "for two",
+  "sharing",
+  "pro deti",
+  "detem",
+  "1 2 porc",
+  "polovicn",
+  "pul porc",
+  "half ",
+  "mala porc",
+  "small "
+ ],
+ "exclude_weak": [
+  "cake",
+  "chia",
+  "jogurt",
+  "omacka",
+  "dip",
+  "dresink",
+  "priloha",
+  "extra ",
+  "pridat",
+  "hranolky",
+  "fries",
+  "pecivo",
+  "chleb",
+  "navic",
+  "majonez",
+  "kecup",
+  "tatarka"
+ ],
+ "share_g_max": 900,
+ "weight_g_min": 120,
+ "protein_words": [
+  [
+   "chicken_breaded",
+   [
+    "smazeny kure",
+    "smazene kure",
+    "kureci rizek",
+    "krupave kure",
+    "crispy chicken"
+   ]
+  ],
+  [
+   "chicken",
+   [
+    "kure",
+    "kurec",
+    "kurat",
+    "kuret",
+    "chicken",
+    "kruti",
+    "kruta",
+    "krutich",
+    "turkey",
+    "kralic"
+   ]
+  ],
+  [
+   "beef",
+   [
+    "hovezi",
+    "hovez",
+    "beef",
+    "steak",
+    "roastbeef",
+    "flank"
+   ]
+  ],
+  [
+   "pork",
+   [
+    "veprov",
+    "vepr",
+    "pork",
+    "krkovic",
+    "panenk",
+    "bucek",
+    "zebir",
+    "zebr"
+   ]
+  ],
+  [
+   "duck",
+   [
+    "kachn",
+    "duck"
+   ]
+  ],
+  [
+   "salmon",
+   [
+    "losos",
+    "salmon",
+    "tunak",
+    "tuna",
+    "pstruh",
+    "treska",
+    "ryba",
+    "rybi",
+    "fish"
+   ]
+  ],
+  [
+   "shrimp",
+   [
+    "kreve",
+    "shrimp",
+    "prawn"
+   ]
+  ],
+  [
+   "tofu",
+   [
+    "tofu",
+    "tempeh",
+    "seitan"
+   ]
+  ],
+  [
+   "cheese",
+   [
+    "cheddar",
+    "halloumi",
+    "syr na gril",
+    "grilovaci syr",
+    "grilovany syr",
+    "kozi syr",
+    "mozzarell",
+    "feta",
+    "balkansk",
+    "syr"
+   ]
+  ]
+ ],
+ "meatless_words": [
+  "bez masa",
+  "vegan",
+  "veggie",
+  "vegetar",
+  "meatless",
+  "plant",
+  "rostlinn"
+ ],
+ "side_words": [
+  [
+   "gnocchi",
+   [
+    "noky",
+    "nocky",
+    "gnocchi"
+   ]
+  ],
+  [
+   "potato_mash",
+   [
+    "kase",
+    "kasi",
+    "pure",
+    "mashed"
+   ]
+  ],
+  [
+   "fries",
+   [
+    "hranolk",
+    "fries",
+    "steakove brambor"
+   ]
+  ],
+  [
+   "dumpling",
+   [
+    "knedl",
+    "dumpling"
+   ]
+  ],
+  [
+   "rice",
+   [
+    "ryze",
+    "rice",
+    "basmati",
+    "jasmin",
+    "ryzi"
+   ]
+  ],
+  [
+   "pasta",
+   [
+    "testovin",
+    "nudle",
+    "spaget",
+    "noodle"
+   ]
+  ],
+  [
+   "potato_boiled",
+   [
+    "vareny brambor",
+    "bramborovy salat"
+   ]
+  ],
+  [
+   "potato_roasted",
+   [
+    "pecene brambor",
+    "opekane brambor",
+    "americke brambor",
+    "grenaille",
+    "brambory",
+    "bramborami",
+    "brambor"
+   ]
+  ]
+ ],
+ "types": [
+  {
+   "key": "lasagna",
+   "words": [
+    "lasagn"
+   ],
+   "mix": [
+    [
+     "lasagna",
+     400
+    ]
+   ],
+   "lead_g": "dish"
+  },
+  {
+   "key": "pizza",
+   "words": [
+    "pizza",
+    "pizz"
+   ],
+   "mix": [
+    [
+     "pizza_cheese",
+     450
+    ]
+   ],
+   "meat_variant": "pizza_meat",
+   "meat_words": [
+    "salam",
+    "sunk",
+    "pepperoni",
+    "prosciutto",
+    "chorizo",
+    "klobas",
+    "slanin",
+    "kure",
+    "kurec",
+    "tunak",
+    "hovezi",
+    "veprov",
+    "spek",
+    "diavola",
+    "capricciosa",
+    "hawai",
+    "kebab"
+   ],
+   "slice_words": [
+    "kousek",
+    "slice",
+    "ctvrtk",
+    "plat"
+   ],
+   "slice_g": 150,
+   "lead_g": "dish"
+  },
+  {
+   "key": "burger",
+   "words": [
+    "burger",
+    "hamburger",
+    "cheeseburger",
+    "big mac",
+    "whopper",
+    "mcchicken",
+    "mcroyal",
+    "big tasty",
+    "mcmuffin"
+   ],
+   "mix": [
+    [
+     "hamburger",
+     200
+    ]
+   ],
+   "chicken_variant": "chicken_burger",
+   "menu_fries_g": 150,
+   "meatless_skip": true
+  },
+  {
+   "key": "kebab",
+   "words": [
+    "kebab",
+    "gyros",
+    "doner",
+    "durum",
+    "shawarm",
+    "gyro"
+   ],
+   "mix": [
+    [
+     "gyro",
+     350
+    ]
+   ],
+   "box_words": [
+    "box",
+    "talir",
+    "tal "
+   ],
+   "box_mix": [
+    [
+     "gyro",
+     300
+    ],
+    [
+     "fries",
+     150
+    ]
+   ]
+  },
+  {
+   "key": "burrito",
+   "words": [
+    "burrito"
+   ],
+   "mix": [
+    [
+     "burrito",
+     350
+    ]
+   ],
+   "lead_g": "dish"
+  },
+  {
+   "key": "quesadilla",
+   "words": [
+    "quesadill"
+   ],
+   "mix": [
+    [
+     "quesadilla",
+     250
+    ]
+   ],
+   "lead_g": "dish"
+  },
+  {
+   "key": "wrap",
+   "words": [
+    "wrap",
+    "tortill",
+    "twister",
+    "boxmaster",
+    "mcwrap"
+   ],
+   "mix": [
+    [
+     "wrap_grilled",
+     250
+    ]
+   ],
+   "fried_variant": "wrap_fried",
+   "veg_variant": "wrap_veg",
+   "lead_g": "dish"
+  },
+  {
+   "key": "falafel",
+   "words": [
+    "falafel"
+   ],
+   "mix": [
+    [
+     "falafel_sandwich",
+     300
+    ]
+   ]
+  },
+  {
+   "key": "nuggets",
+   "words": [
+    "nuget",
+    "nugget",
+    "nugety",
+    "popcorn chicken"
+   ],
+   "mix": [
+    [
+     "nuggets",
+     200
+    ]
+   ],
+   "piece_g": 18,
+   "cheese_variant": "cheese_fried",
+   "cheese_piece_g": 25
+  },
+  {
+   "key": "strips",
+   "words": [
+    "strips",
+    "stripsy",
+    "tenders",
+    "fingers"
+   ],
+   "mix": [
+    [
+     "nuggets",
+     200
+    ]
+   ],
+   "piece_g": 40,
+   "cheese_variant": "cheese_fried",
+   "cheese_piece_g": 25
+  },
+  {
+   "key": "wings",
+   "words": [
+    "kridl",
+    "wings"
+   ],
+   "mix": [
+    [
+     "wings",
+     300
+    ]
+   ],
+   "piece_g": 30
+  },
+  {
+   "key": "sandwich",
+   "words": [
+    "bageta",
+    "baget",
+    "sendvic",
+    "sandwich",
+    "panini",
+    "toast",
+    "bagel",
+    "ciabatt"
+   ],
+   "mix": [
+    [
+     "sandwich",
+     250
+    ]
+   ],
+   "lead_g": "dish"
+  },
+  {
+   "key": "schnitzel",
+   "words": [
+    "rizek",
+    "rizk",
+    "schnitzel",
+    "cordon",
+    "smazeny syr",
+    "smazak",
+    "rizeck"
+   ],
+   "mix": [
+    [
+     "chicken_breaded",
+     150
+    ],
+    [
+     "@side",
+     250
+    ]
+   ],
+   "default_side": "potato_boiled",
+   "cheese_words": [
+    "syr",
+    "smazak"
+   ],
+   "cheese_variant": "cheese_fried"
+  },
+  {
+   "key": "czech_sauce",
+   "words": [
+    "gulas",
+    "svickov",
+    "rajsk",
+    "koprov",
+    "segedin",
+    "znojem",
+    "stroganov",
+    "paprikas",
+    "na smetane",
+    "platky",
+    "ptacek"
+   ],
+   "mix": [
+    [
+     "beef_gravy",
+     150
+    ],
+    [
+     "@side",
+     250
+    ]
+   ],
+   "default_side": "dumpling"
+  },
+  {
+   "key": "teriyaki",
+   "words": [
+    "teriyak"
+   ],
+   "mix": [
+    [
+     "teriyaki_chicken",
+     150
+    ],
+    [
+     "rice",
+     200
+    ]
+   ]
+  },
+  {
+   "key": "curry",
+   "words": [
+    "kari",
+    "curry",
+    "masala",
+    "tikka",
+    "korma",
+    "vindaloo",
+    "butter chicken"
+   ],
+   "mix": [
+    [
+     "@protein",
+     130
+    ],
+    [
+     "curry_sauce",
+     150
+    ],
+    [
+     "rice",
+     200
+    ]
+   ],
+   "default_protein": "none"
+  },
+  {
+   "key": "ramen",
+   "words": [
+    "ramen",
+    "pho ",
+    "pho bo",
+    "pho ga"
+   ],
+   "mix": [
+    [
+     "ramen",
+     550
+    ]
+   ],
+   "lead_g": "dish"
+  },
+  {
+   "key": "noodles",
+   "words": [
+    "pad thai",
+    "nudle",
+    "noodles",
+    "lo mein",
+    "chow mein",
+    "wok",
+    "yakisoba",
+    "udon",
+    "bun bo",
+    "bun cha"
+   ],
+   "mix": [
+    [
+     "pad_thai",
+     400
+    ]
+   ],
+   "lead_g": "dish"
+  },
+  {
+   "key": "fried_rice",
+   "words": [
+    "smazena ryze",
+    "fried rice",
+    "nasi goreng",
+    "com rang"
+   ],
+   "mix": [
+    [
+     "fried_rice",
+     400
+    ]
+   ],
+   "lead_g": "dish"
+  },
+  {
+   "key": "sushi",
+   "words": [
+    "sushi",
+    "maki",
+    "nigiri",
+    "uramaki",
+    "futomaki",
+    "california"
+   ],
+   "mix": [
+    [
+     "sushi",
+     250
+    ]
+   ],
+   "tuna_variant": "sushi_tuna",
+   "tuna_words": [
+    "tunak",
+    "tuna"
+   ],
+   "piece_g": 25,
+   "lead_g": "dish"
+  },
+  {
+   "key": "bowl",
+   "words": [
+    "bowl",
+    "poke",
+    "miska",
+    "buddha",
+    "bibimbap"
+   ],
+   "mix": [
+    [
+     "@protein",
+     120
+    ],
+    [
+     "@side",
+     200
+    ],
+    [
+     "veg",
+     120
+    ]
+   ],
+   "default_protein": "none",
+   "default_side": "rice",
+   "lead_g": "dish"
+  },
+  {
+   "key": "gnocchi",
+   "words": [
+    "gnocchi",
+    "noky",
+    "nocky"
+   ],
+   "mix": [
+    [
+     "gnocchi",
+     300
+    ],
+    [
+     "@protein",
+     80
+    ]
+   ],
+   "default_protein": "none",
+   "lead_g": "dish"
+  },
+  {
+   "key": "pasta",
+   "words": [
+    "testovin",
+    "spaget",
+    "spaghett",
+    "penne",
+    "tagliatel",
+    "fusill",
+    "linguin",
+    "carbonar",
+    "bolognes",
+    "aglio",
+    "ravioli",
+    "tortellin",
+    "pappardel",
+    "rigaton",
+    "mac and"
+   ],
+   "mix": [
+    [
+     "pasta",
+     280
+    ],
+    [
+     "@protein",
+     100
+    ],
+    [
+     "sauce_meat",
+     100
+    ]
+   ],
+   "plain_mix": [
+    [
+     "pasta_sauce",
+     400
+    ]
+   ],
+   "meat_words": [
+    "bolognes",
+    "carbonar",
+    "ragu",
+    "slanin",
+    "spek",
+    "pancett",
+    "kure",
+    "kurec",
+    "hovezi",
+    "veprov",
+    "losos",
+    "kreve",
+    "tunak",
+    "sunk",
+    "salam",
+    "kruti",
+    "krutich",
+    "kuret",
+    "kurat",
+    "slanin"
+   ],
+   "default_protein": "beef",
+   "lead_g": "dish"
+  },
+  {
+   "key": "risotto",
+   "words": [
+    "rizot",
+    "risott"
+   ],
+   "mix": [
+    [
+     "risotto",
+     400
+    ]
+   ],
+   "lead_g": "dish"
+  },
+  {
+   "key": "grill",
+   "words": [
+    "steak",
+    "flank",
+    "roastbeef",
+    "panenk",
+    "krkovic",
+    "zebr",
+    "zebir",
+    "kotlet",
+    "medailon",
+    "stehn",
+    "kachn",
+    "losos",
+    "pstruh",
+    "treska"
+   ],
+   "mix": [
+    [
+     "@protein",
+     180
+    ],
+    [
+     "@side",
+     200
+    ]
+   ],
+   "default_protein": "chicken",
+   "default_side": "potato_roasted"
+  },
+  {
+   "key": "salad",
+   "words": [
+    "salat",
+    "salad",
+    "caesar"
+   ],
+   "mix": [
+    [
+     "@protein",
+     100
+    ],
+    [
+     "salad_leaves",
+     220
+    ]
+   ],
+   "default_protein": "none",
+   "lead_g": "dish"
+  },
+  {
+   "key": "pancakes",
+   "words": [
+    "palacink",
+    "pancake",
+    "livanc"
+   ],
+   "mix": [
+    [
+     "pancakes",
+     250
+    ]
+   ],
+   "piece_g": 120,
+   "lead_g": "dish"
+  }
+ ],
+ "fallback_type": "grill",
+ "fallback_note": "No dish word but a meat or fish word in the NAME (for example \"Krokety z vepřového masa\"): counted as type grill (meat + side).",
+ "min_meal_price": 80,
+ "meat_weight_min": 60,
+ "count_note": "A count in the name (\"8x BBQ Wings\", \"6 ks\", \"1ks\") with a type that has piece_g gives the weight: 8 x 30 g.",
+ "weight_rules": "1) the weight field of the menu (Wolt unit_info) = whole dish; 2) grams at the START of the name or description (\"100g Grilované kuřecí medailonky\") = meat weight (Czech menu custom), also every daily-menu weight, EXCEPT for types marked lead_g \"dish\" (pasta, gnocchi, risotto, noodles, salads, bowls ...), where grams of lead_dish_g_min (200 g) or more are the whole dish (\"250g Tagliatelle s kuřecím masem\") and fewer stay the meat (\"100g Těstoviny s krůtími prsy\"); 3) grams elsewhere in the name or description = whole dish; 4) a count with piece_g; 5) else the type default portion. A whole dish under weight_g_min is a snack (refused); without any weight, a price under min_meal_price (80 CZK) is a side, sauce or kids portion (refused).",
+ "changes": [
+  "2026-10-19 S4 first live Wolt read (Blanice kolej): price floor 60 -> 80 CZK (sauces, soy-sauce bowl 10 CZK, plain noodles 50-60 CZK counted as meals); sashimi, tatarák, miso, kids menus, sauce sets refused; meat-free burgers refused (no table value); cheese fingers = fried cheese 25 g a piece.",
+  "2026-10-19 S4: leading grams are the whole dish for one-pot types (lead_g dish); \"250g Tagliatelle s kuřecím masem\" had been read as 250 g of chicken.",
+  "2026-10-19 S4 run 1: KFC \"Kyblík 30 Hot Wings\" (a sharing bucket, 900 g) refused: kyblík, bucket.",
+  "2026-10-19 S4 run 1: foodora lists a dish whose size is chosen later at 1 CZK (K-Bang \"Classic Wings 1 CZK, 6/8/12ks\"): any price under 30 CZK is a placeholder, refused.",
+  "2026-10-19 S4 run 1: foodora \"Steakové hranolky\" (steak fries) and \"Americké brambory, křupavé...\" (crispy potatoes) were planned as 50 g protein meals: \"krupav\" alone no longer means breaded chicken, steak fries refused, and a dish whose name STARTS with a side word (brambory, hranolky, rýže...) with no meat word in the name is a side, refused.",
+  "2026-10-19 S4 run 1: Wolt \"BRODO DI MANZO\" (beef broth, described \"hovězí vývar s masem ... nudle\") was planned as a meal through the meat-and-side-in-the-description rule: that rule now needs no soup word in the description (soup_words), and brodo is refused.",
+  "2026-10-19 S4 run 2 (Eat out, Chodov): \"Pizza Pane\" (pizza-dough garlic bread) counted as a 450 g pizza, and \"Curry rýže\" / \"Tikka N rice\" (sauce and rice, no meat named) counted with 130 g chicken: pizza bread refused; curry and bowl without a meat word now have no meat (default_protein none).",
+  "2026-10-19 S4 independent review: a small weight on a meat-led dish (\"Kuřecí řízek 150g\", \"Hovězí steak 200 g\") is now the meat weight (meat_led_types, 300 g), not the whole dish (protein was 2-3 times too low); more than 16 pieces, \"pro 2/4 osoby\", kids portions (\"pro děti\") and half portions (\"1/2 porce\", \"poloviční\") are refused; a salad with no meat, fish, cheese or tofu is a side; weights are read with ASCII digits only and every Unicode space read as a space, the same in Python and JS; allergens: the 14 EU allergens by name and menu number (allergens)."
+ ],
+ "lead_dish_g_min": 200,
+ "price_floor_any": 30,
+ "soup_words": [
+  "vyvar",
+  "polevk",
+  "soup",
+  "broth",
+  "brodo",
+  "consomm"
+ ],
+ "meat_led_types": [
+  "schnitzel",
+  "czech_sauce",
+  "grill",
+  "teriyaki"
+ ],
+ "meat_led_g_max": 300,
+ "meat_led_note": "Types led by one piece of meat: a weight of meat_led_g_max (300 g) or less, wherever it stands (weight field, name, description), is the MEAT weight, because Czech menus state the meat weight of meat dishes and a meat-and-side plate is heavier than 300 g. Above it, the weight is the whole dish.",
+ "pieces_max": 16,
+ "pieces_note": "More than pieces_max (16) pieces (\"Kuřecí křídla 20 ks\", \"Sushi set 32 ks\") is a sharing size and is refused.",
+ "allergens": {
+  "about": "EU Regulation 1169/2011 Annex II lists 14 allergens; Czech menus number them 1-14 in this order (menicka.cz shows the numbers after each dish). When the request allergies name one (input words, word start), every dish whose name or description has one of its dish words, or whose menu lists its number, is refused. Wolt and foodora menus are read without allergen lists, so for them only the words help: he must still check the dish page.",
+  "list": [
+   {
+    "code": "1",
+    "name": "gluten",
+    "input": [
+     "gluten",
+     "lepek",
+     "lepk",
+     "wheat",
+     "psenic",
+     "celiak",
+     "coeliac",
+     "celiac"
+    ],
+    "dish": [
+     "psenic",
+     "zito",
+     "zitn",
+     "jecm",
+     "ovesn",
+     "spald",
+     "kuskus",
+     "couscous",
+     "bulgur",
+     "testovin",
+     "pasta",
+     "spaget",
+     "knedl",
+     "chleb",
+     "pecivo",
+     "strouhank",
+     "rizek",
+     "obalovan",
+     "pizza",
+     "burger",
+     "wrap",
+     "tortil",
+     "bagel",
+     "baget",
+     "sendvic",
+     "sandwich",
+     "noodle",
+     "nudle",
+     "ramen",
+     "udon",
+     "lasagn",
+     "gnocchi",
+     "palacin",
+     "pancake",
+     "toast",
+     "burrito",
+     "quesadil",
+     "kebab",
+     "gyros",
+     "pita",
+     "panko",
+     "tempura",
+     "seitan"
+    ]
+   },
+   {
+    "code": "2",
+    "name": "crustaceans",
+    "input": [
+     "crustacean",
+     "shellfish",
+     "korys",
+     "shrimp",
+     "prawn",
+     "krevet"
+    ],
+    "dish": [
+     "krevet",
+     "kreve",
+     "shrimp",
+     "prawn",
+     "krab",
+     "crab",
+     "humr",
+     "lobster",
+     "langust"
+    ]
+   },
+   {
+    "code": "3",
+    "name": "eggs",
+    "input": [
+     "egg",
+     "eggs",
+     "vejce",
+     "vajec",
+     "vajic"
+    ],
+    "dish": [
+     "vejce",
+     "vajec",
+     "vajic",
+     "egg",
+     "majonez",
+     "mayo",
+     "tatark",
+     "omelet",
+     "carbonar",
+     "rizek",
+     "obalovan",
+     "nudle",
+     "noodle"
+    ]
+   },
+   {
+    "code": "4",
+    "name": "fish",
+    "input": [
+     "fish",
+     "ryb"
+    ],
+    "dish": [
+     "ryb",
+     "losos",
+     "tunak",
+     "treska",
+     "pstruh",
+     "kapr",
+     "fish",
+     "salmon",
+     "tuna",
+     "sushi",
+     "anchov",
+     "sardel"
+    ]
+   },
+   {
+    "code": "5",
+    "name": "peanuts",
+    "input": [
+     "peanut",
+     "arasid",
+     "burak"
+    ],
+    "dish": [
+     "arasid",
+     "burak",
+     "peanut",
+     "satay",
+     "sate ",
+     "kung pao",
+     "kungpao"
+    ]
+   },
+   {
+    "code": "6",
+    "name": "soy",
+    "input": [
+     "soy",
+     "soya",
+     "soja",
+     "sojov"
+    ],
+    "dish": [
+     "soj",
+     "soy",
+     "tofu",
+     "edamame",
+     "teriyaki",
+     "miso",
+     "tempeh"
+    ]
+   },
+   {
+    "code": "7",
+    "name": "milk",
+    "input": [
+     "milk",
+     "dairy",
+     "lactose",
+     "laktoz",
+     "mlek",
+     "mlecn",
+     "mleko"
+    ],
+    "dish": [
+     "mlek",
+     "mlecn",
+     "syr",
+     "smetan",
+     "masl",
+     "jogurt",
+     "tvaroh",
+     "mozzarel",
+     "parmazan",
+     "parmesan",
+     "cheddar",
+     "eidam",
+     "gouda",
+     "feta",
+     "halloumi",
+     "cheese",
+     "cream",
+     "butter",
+     "bechamel",
+     "carbonar",
+     "raita",
+     "paneer",
+     "ghee",
+     "queso",
+     "quesadil"
+    ]
+   },
+   {
+    "code": "8",
+    "name": "tree nuts",
+    "input": [
+     "nut",
+     "nuts",
+     "orech",
+     "orisk",
+     "tree nut"
+    ],
+    "dish": [
+     "orech",
+     "orisk",
+     "kesu",
+     "cashew",
+     "mandl",
+     "almond",
+     "pistac",
+     "liskov",
+     "vlassk",
+     "pekan",
+     "makadam",
+     "walnut",
+     "hazelnut"
+    ]
+   },
+   {
+    "code": "9",
+    "name": "celery",
+    "input": [
+     "celery",
+     "celer"
+    ],
+    "dish": [
+     "celer",
+     "celery"
+    ]
+   },
+   {
+    "code": "10",
+    "name": "mustard",
+    "input": [
+     "mustard",
+     "horcic"
+    ],
+    "dish": [
+     "horcic",
+     "mustard",
+     "dijon"
+    ]
+   },
+   {
+    "code": "11",
+    "name": "sesame",
+    "input": [
+     "sesame",
+     "sezam"
+    ],
+    "dish": [
+     "sezam",
+     "sesame",
+     "tahini",
+     "hummus"
+    ]
+   },
+   {
+    "code": "12",
+    "name": "sulphites",
+    "input": [
+     "sulphite",
+     "sulfite",
+     "siric",
+     "sulfit"
+    ],
+    "dish": []
+   },
+   {
+    "code": "13",
+    "name": "lupin",
+    "input": [
+     "lupin",
+     "vlci bob"
+    ],
+    "dish": [
+     "lupin",
+     "vlci bob"
+    ]
+   },
+   {
+    "code": "14",
+    "name": "molluscs",
+    "input": [
+     "mollusc",
+     "mekkys",
+     "squid",
+     "oliheň",
+     "olihen",
+     "mussel",
+     "oyster"
+    ],
+    "dish": [
+     "chobotn",
+     "kalmar",
+     "olihen",
+     "squid",
+     "muslic",
+     "mussel",
+     "slavk",
+     "oyster",
+     "ustric",
+     "scallop",
+     "hrebenatk"
+    ]
+   }
+  ]
+ },
+ "main_salad_words": [
+  "caesar",
+  "cesar",
+  "cobb",
+  "nicois",
+  "chef ",
+  "poke"
+ ],
+ "side_salad_note": "A salad with no meat, fish, cheese or tofu named is a side salad (refused), unless its name is a main salad (main_salad_words: Caesar, Cobb, Niçoise, chef, poke)."
+}
