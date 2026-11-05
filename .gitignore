@@ -5,3 +5,4 @@ data/
 LAB/captures/raw/
 node_modules/
 _PAST-WORK/
+LAB/captures/**/*.png
