@@ -14,6 +14,15 @@ Use (from the MealPlanner folder, or anywhere with the path):
   python3 tools/make-share-copy.py --out <folder>  -> write the zip there
   python3 tools/make-share-copy.py --check <zip>   -> lists what a zip holds and FAILS if anything under data/ other than
                                                       the two shop survey files is inside (run it before sending)
+  python3 tools/make-share-copy.py --check-publish -> the PUBLIC GitHub repository check (2026-11-05): every file git
+                                                      tracks now AND every file in every older commit (a public repo
+                                                      publishes its whole history), plus commit authors and messages.
+                                                      FAILS on: a _PAST-WORK or data/ path, a word of data/share-forbid.txt
+                                                      (accents and case ignored, so "Tomas" also matches "Tomáš"), a
+                                                      scheduled-task id (trig_...), a Claude session id, a private key,
+                                                      an e-mail address outside the reserved test domains.
+  python3 tools/make-share-copy.py --install-hook  -> makes git run --check-publish before every "git push" and refuse
+                                                      the push when it fails (GitHub Pages publishes what is pushed)
 The script itself checks the zip it made and refuses to finish if a data file slipped in. It never deletes anything;
 a zip that already exists gets -2, -3 added to its name.
 Your own words: put one word or phrase per line into data/share-forbid.txt (your name, your Windows user name, your
@@ -23,6 +32,8 @@ e-mail addresses are searched, and the OK line says so.
 """
 import re
 import hashlib
+import subprocess
+import unicodedata
 import os
 import sys
 import zipfile
@@ -84,6 +95,14 @@ def sha(p):
 
 
 EMAIL_RE = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}')
+
+
+def email_ok(m):
+    """Addresses that can never reach a person: the domains reserved for examples and tests (RFC 2606, RFC 6761),
+    Anthropic's no-reply sender and GitHub's no-reply addresses (commit authors)."""
+    d = m.lower().rsplit('@', 1)[-1]
+    return (d in ('example.com', 'example.org', 'example.net') or d.endswith(('.test', '.example', '.invalid', '.localhost'))
+            or m.lower() == 'noreply@anthropic.com' or d == 'users.noreply.github.com')
 TEXT_EXT = ('.md', '.py', '.js', '.json', '.txt', '.html', '.css', '.tsv', '.mjs', '.csv', '.pipe')
 
 
@@ -120,7 +139,7 @@ def check_zip(path, verbose=True):
                     if w.lower() in text.lower():
                         words_hit.append('%s: contains "%s"' % (n, w))
                 for m in EMAIL_RE.findall(text):
-                    if not m.lower().endswith(('@b.cz', '@example.com')):
+                    if not email_ok(m):
                         words_hit.append('%s: e-mail address %s' % (n, m))
         if len(tops) != 1 or 'MealPlanner' not in tops:
             bad.append('top folder is not exactly MealPlanner/: %s' % sorted(tops))
@@ -163,9 +182,97 @@ def check_zip(path, verbose=True):
     return True
 
 
+def fold(text):
+    """Lower case without accents: "Tomáš" -> "tomas", so a word is found however it was typed."""
+    return ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn').lower()
+
+
+PUBLISH_PATTERNS = [
+    (re.compile(r'trig_[A-Za-z0-9]{10,}'), 'a scheduled-task id'),
+    (re.compile(r'session_[A-Za-z0-9]{12,}'), 'a Claude session id'),
+    (re.compile(r'-----BEGIN [A-Z ]*PRIVATE KEY-----|"private_key"\s*:'), 'a private key'),
+]
+BAD_PATH_PARTS = ('_PAST-WORK', 'data')
+
+
+def git(*args, binary=False):
+    r = subprocess.run(['git', '-C', MP] + list(args), capture_output=True)
+    if r.returncode != 0:
+        raise SystemExit('git %s failed: %s' % (' '.join(args), r.stderr.decode('utf-8', 'replace')))
+    return r.stdout if binary else r.stdout.decode('utf-8', 'replace')
+
+
+def scan_text(where, text, words, hits):
+    f = fold(text)
+    for w in words:
+        if fold(w) in f:
+            hits.append('%s: contains a word of data/share-forbid.txt ("%s")' % (where, w))
+    for rx, what in PUBLISH_PATTERNS:
+        m = rx.search(text)
+        if m:
+            hits.append('%s: %s (%s...)' % (where, what, m.group(0)[:9]))
+    for m in EMAIL_RE.findall(text):
+        if not email_ok(m):
+            hits.append('%s: e-mail address %s' % (where, m))
+
+
+def check_publish(verbose=True):
+    """The check for the PUBLIC repository: what git would push, including every older commit."""
+    words = forbid_words()
+    hits = []
+    commits = [c for c in git('rev-list', '--all').split() if c]
+    blobs = {}  # blob id -> first path seen
+    for c in commits:
+        for ln in git('ls-tree', '-r', c).splitlines():
+            meta, path = ln.split('\t', 1)
+            parts = path.split('/')
+            if any(p in BAD_PATH_PARTS for p in parts[:-1]) or parts[0] in BAD_PATH_PARTS:
+                hits.append('commit %s: path %s must stay local' % (c[:7], path))
+            bid = meta.split()[2]
+            blobs.setdefault(bid, (c, path))
+    for bid, (c, path) in blobs.items():
+        raw = git('cat-file', 'blob', bid, binary=True)
+        if b'\0' in raw[:8000]:
+            continue  # pictures and other binary files
+        scan_text('%s (commit %s)' % (path, c[:7]), raw.decode('utf-8', 'replace'), words, hits)
+    for c in commits:
+        meta = git('show', '-s', '--format=%an <%ae> | %cn <%ce> | %B', c)
+        scan_text('commit %s author / message' % c[:7], meta, words, hits)
+    for t in [x for x in git('tag', '-l').split() if x]:
+        scan_text('tag ' + t, git('cat-file', '-p', 'refs/tags/' + t), words, hits)
+    seen, out = set(), []
+    for h in hits:
+        if h not in seen:
+            seen.add(h)
+            out.append(h)
+    if out:
+        print('FAIL publish check: %d problem(s). Do not push.\n  ' % len(out) + '\n  '.join(out[:60]))
+        return False
+    if verbose:
+        print('OK publish check: %d commits, %d files scanned (now and in history); no _PAST-WORK or data/ path, no scheduled-task or session id, no private key, no e-mail outside test domains. %s' % (
+            len(commits), len(blobs), ('None of the %d words in data/share-forbid.txt found.' % len(words)) if words else 'NOTE: no data/share-forbid.txt, so names and account words were not searched for.'))
+    return True
+
+
+HOOK = """#!/bin/sh
+# Installed by tools/make-share-copy.py --install-hook: refuse a push that would publish private data.
+exec python3 "$(git rev-parse --show-toplevel)/tools/make-share-copy.py" --check-publish
+"""
+
+
 def main(argv):
     if '-h' in argv or '--help' in argv:
         print(__doc__)
+        return 0
+    if '--check-publish' in argv:
+        return 0 if check_publish() else 1
+    if '--install-hook' in argv:
+        hook = os.path.join(git('rev-parse', '--git-path', 'hooks').strip(), 'pre-push')
+        hook = hook if os.path.isabs(hook) else os.path.join(MP, hook)
+        with open(hook, 'w') as f:
+            f.write(HOOK)
+        os.chmod(hook, 0o755)
+        print('installed: %s (every git push runs --check-publish first)' % hook)
         return 0
     if '--check' in argv:
         return 0 if check_zip(argv[argv.index('--check') + 1]) else 1

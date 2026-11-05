@@ -71,12 +71,12 @@ def t_flow():
     tmp = tempfile.mkdtemp(prefix='mp-dine-')
     for d in ('tools', 'steps'):
         shutil.copytree(os.path.join(MP, d), os.path.join(tmp, d))
-    for d in ('shops', 'requests', 'users/tomas-dvorak'):
+    for d in ('shops', 'requests', 'users/demo-user'):
         os.makedirs(os.path.join(tmp, 'data', d))
     os.makedirs(os.path.join(tmp, 'app', 'js'))
     shutil.copy(os.path.join(MP, 'app', 'js', 'planner.js'), os.path.join(tmp, 'app', 'js'))
     shutil.copy(os.path.join(MP, 'tests', 'fixtures', 'shops.json'), os.path.join(tmp, 'data', 'shops'))
-    json.dump({'id': 'tomas-dvorak', 'cooking': {'meals_per_day': 3}}, open(os.path.join(tmp, 'data', 'users', 'tomas-dvorak', 'profile.json'), 'w'))
+    json.dump({'id': 'demo-user', 'cooking': {'meals_per_day': 3}}, open(os.path.join(tmp, 'data', 'users', 'demo-user', 'profile.json'), 'w'))
     base = json.load(open(os.path.join(FX, 'request-order.json'), encoding='utf-8'))
     rid = base['id']
     rp = os.path.join(tmp, 'data', 'requests', rid + '.json')

@@ -120,7 +120,7 @@ Four rules hold the contract together:
 
 ## 5. One request, end to end (Cook mode, real numbers from 19/10)
 
-1. He fills New plan: 3 days, cook, budget 480 CZK. The app writes `requests/REQ-20261019-100250-<user>.json` with targets 150 g protein, 2,500 kcal a day.
+1. He fills New plan: 3 days, cook, budget 480 CZK. The app writes `requests/REQ-20261019-100250-demo-user.json` with targets 150 g protein, 2,500 kcal a day.
 2. He opens Claude desktop > Scheduled > "Meal Planner run" > Run now. The task follows `steps/RUN-STEPS.md`.
 3. `cook.py pick` returns that request. `cook.py account` checks the Rohlík account e-mail matches the profile.
 4. `cook.py terms` prints the search words and which shops can be skipped (prices read within 48 hours). Claude reads Rohlík through its connector and Košík, Tesco, kupi.cz through Chrome, writing TSV files.
