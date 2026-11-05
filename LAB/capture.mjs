@@ -71,8 +71,10 @@ for (const [label, vp] of [['phone', { width: 390, height: 844 }], ['laptop', { 
   await page.click('#nav button[data-view="requests"]'); await shot('07-requests');
   await page.click('button[data-act="open-request"]'); await shot('08-result');
   await page.click('#nav button[data-view="history"]'); await shot('09-history');
-  await page.click('#nav button[data-view="foods"]'); await shot('10-foods');
-  await page.click('#nav button[data-view="shops"]'); await shot('11-shops');
+  // Since lab run 1 Foods and Shops sit under Settings > More on the phone.
+  const goView = async v => { if (await page.isVisible(`#nav button[data-view="${v}"]`)) await page.click(`#nav button[data-view="${v}"]`); else { await page.click('#nav button[data-view="settings"]'); await page.click(`.more-row button[data-view="${v}"]`); } };
+  await goView('foods'); await shot('10-foods');
+  await goView('shops'); await shot('11-shops');
   await page.click('#nav button[data-view="settings"]'); await shot('12-settings');
   m.total_bytes = bytes;
   m.console_errors = errors;

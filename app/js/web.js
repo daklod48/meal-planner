@@ -184,8 +184,36 @@
   }
 
   // ---------------------------------------------------------------- header chip (signed in)
+  // Phone shell (lab run 1): the section buttons get an icon and a short word; on a phone (web.css) they become a
+  // bottom tab bar of five (Apple HIG, Tab bars: five or fewer, always visible, navigation only, a badge for news).
+  // Foods and Shops stay on the laptop bar and sit under Settings > More on the phone.
+  var ICONS = {
+    plan: 'M12 5v14M5 12h14', requests: 'M4 6h16M4 12h16M4 18h10', history: 'M4 19V5M4 19h16M8 15l4-4 3 3 5-6',
+    profiles: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0', settings: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z',
+    foods: 'M3 7h18l-2 11H5L3 7zm5 0V5a4 4 0 0 1 8 0v2', shops: 'M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'
+  };
+  function seenKey() { return 'mp-seen:' + (user ? user.uid : ''); }
+  function shell() {
+    var nav = $('#nav'); if (!nav || !user) return;
+    var st = A().state(), seen = A().lsGet(seenKey()) || {}, res = St.S().results || {};
+    if (st.view === 'request' && st.viewArg && !seen[st.viewArg]) { seen[st.viewArg] = 1; A().lsSet(seenKey(), seen); }
+    var fresh = Object.keys(res).filter(function (id) { return !seen[id]; }).length;
+    Array.prototype.forEach.call(nav.querySelectorAll('button[data-view]'), function (b) {
+      var v = b.dataset.view, full = b.textContent;
+      if (v === 'foods' || v === 'shops') b.classList.add('nav-more');
+      b.innerHTML = '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + (ICONS[v] || '') + '"/></svg>' +
+        '<span class="full">' + h(full) + '</span><span class="short" aria-hidden="true">' + h(t('web_tab_' + v)) + '</span>' +
+        (v === 'requests' && fresh ? '<span class="badge" aria-label="' + h(t('web_new_results', { n: fresh })) + '">' + fresh + '</span>' : '');
+    });
+  }
+  function moreHtml() {
+    return '<div class="more-row"><span class="muted">' + h(t('web_more')) + '</span>' +
+      '<button type="button" data-view="foods">' + h(t('nav_foods')) + '</button><button type="button" data-view="shops">' + h(t('nav_shops')) + '</button>' +
+      '<button type="button" data-act="web-signout" class="ghost">' + h(t('web_sign_out')) + '</button></div>';
+  }
   function header() {
     var el = $('#acct'); if (!el) return;
+    shell();
     if (!user) { el.innerHTML = ''; return; }
     el.innerHTML = '<span class="acct-name">' + (user.isAnonymous ? '<span class="tag">' + h(t('web_demo_badge')) + '</span>' : h(user.name || user.email || '')) + '</span>' +
       (user.isAnonymous ? '<button type="button" class="small primary" data-act="web-keep">' + h(t('web_keep_short')) + '</button>' : '') +
@@ -230,6 +258,48 @@
       A().go('request', id);
       A().showToast(t('web_result_added', { id: id }));
     }, function (e) { if (box) { box.className = 'error'; box.textContent = e.message || errText(e); } });
+  }
+
+  // ---------------------------------------------------------------- instant plan (lab run 1, 2026-11-05)
+  /* An estimate the browser can make at once, before any Claude run: for every shop with at least 4 products already
+     in this account's foods.json, planner.js basket() (the same greedy shopping list Claude's runs use, capped at 40 %
+     per product) buys the person's protein and energy for the chosen days; the cheapest shop that covers both wins.
+     It writes nothing (display only) and says plainly what it skips: today's prices, the vegetables rule, recipes, the cart. */
+  function fold(x) { return String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  function instantPlan(u, v, tg) {
+    var P = window.MPPlanner, f = A().fmt, S = St.S();
+    var items = (S.foods && Array.isArray(S.foods.items)) ? S.foods.items : [];
+    var head = '<section class="instant" aria-labelledby="ip-h"><p class="eyebrow">' + h(t('ip_eyebrow')) + '</p><h3 id="ip-h">' + h(t('ip_title')) + '</h3>';
+    if (!tg || !tg.ok) return head + '<p class="muted">' + h(t('ip_need_targets')) + '</p></section>';
+    var days = Number(v.days) > 0 && Number(v.days) <= 14 ? Math.round(Number(v.days)) : 7;
+    var bad = fold(u.profile.dislikes).split(/[,;]+/).map(function (x) { return x.trim(); }).filter(function (x) { return x.length > 2; });
+    var usable = items.filter(function (x) { return x && x.in_stock !== false && !bad.some(function (w) { return fold(x.name).indexOf(w) >= 0; }); });
+    var byShop = {};
+    usable.forEach(function (x) { (byShop[x.shop] = byShop[x.shop] || []).push(x); });
+    var need = { protein_g: tg.protein_g * days, kcal: tg.kcal * days }, cards = (u.profile.cards || []);
+    var tries = Object.keys(byShop).filter(function (k) { return byShop[k].length >= 4; }).map(function (shop) {
+      var b = P.basket(byShop[shop], need, cards);
+      return { shop: shop, b: b, n: byShop[shop].length, seen: byShop[shop].map(function (x) { return x.seen || ''; }).sort()[0] };
+    });
+    if (!tries.length) return head + '<p class="muted">' + h(t('ip_no_prices')) + '</p></section>';
+    tries.sort(function (a, b) { return (a.b.met === b.b.met ? 0 : a.b.met ? -1 : 1) || a.b.cost - b.b.cost || (a.shop < b.shop ? -1 : 1); });
+    var best = tries[0], b = best.b, perDay = b.cost / days;
+    var budget = Number(String(v.budget_total || '').replace(',', '.')) || (P.perDay(u.profile.budget && u.profile.budget.amount, u.profile.budget && u.profile.budget.period) || 0) * days;
+    var pc = Math.min(100, Math.round(100 * b.protein_g / need.protein_g)), kc = Math.min(100, Math.round(100 * b.kcal / need.kcal));
+    var shopName = t('shop_' + best.shop) === 'shop_' + best.shop ? best.shop : t('shop_' + best.shop);
+    var out = head + '<p class="ip-lede">' + h(t('ip_lede', { days: days, shop: shopName })) + '</p>' +
+      '<div class="ip-figs">' +
+      '<div class="fig"><span class="big">' + h(f(b.cost, 0)) + ' CZK</span><span>' + h(t('ip_total', { d: f(perDay, 0) })) + '</span></div>' +
+      '<div class="fig"><span class="big">' + pc + ' %</span><span>' + h(t('ip_protein', { g: f(tg.protein_g) })) + '</span><span class="meter" aria-hidden="true"><i style="width:' + pc + '%"></i></span></div>' +
+      '<div class="fig"><span class="big">' + kc + ' %</span><span>' + h(t('ip_energy', { k: f(tg.kcal) })) + '</span><span class="meter" aria-hidden="true"><i style="width:' + kc + '%"></i></span></div>' +
+      '</div>' +
+      (budget > 0 ? '<p class="' + (b.cost <= budget ? 'ok-line' : 'warn') + '">' + h(b.cost <= budget ? t('ip_under_budget', { b: f(budget, 0), x: f(budget - b.cost, 0) }) : t('ip_over_budget', { b: f(budget, 0), x: f(b.cost - budget, 0) })) + '</p>' : '') +
+      '<details class="ip-list"><summary>' + h(t('ip_list', { n: b.items.length })) + '</summary><ul>' + b.items.map(function (x) {
+        return '<li><span>' + h(x.packs + ' × ' + x.name) + '</span><span>' + h(f(x.cost, 2)) + ' CZK' + (x.card_used ? ' · ' + h(t('ip_card')) : '') + '</span></li>';
+      }).join('') + '</ul></details>' +
+      (tries.length > 1 ? '<p class="muted small">' + h(t('ip_others')) + ' ' + h(tries.slice(1).map(function (x) { var nm = t('shop_' + x.shop); return (nm === 'shop_' + x.shop ? x.shop : nm) + ' ' + f(x.b.cost, 0) + ' CZK' + (x.b.met ? '' : ' (' + t('ip_short') + ')'); }).join(', ')) + '</p>' : '') +
+      '<p class="muted small">' + h(t('ip_honest', { n: usable.length, date: (best.seen || '').slice(0, 10).split('-').reverse().map(Number).join('. ') })) + '</p></section>';
+    return out;
   }
 
   // ---------------------------------------------------------------- actions
@@ -301,6 +371,6 @@
     if (e.target && e.target.id === 'web-result-file' && e.target.files && e.target.files[0]) addResult(e.target.files[0]);
   });
 
-  window.MPWeb = { start: start, redraw: redraw, header: header, settingsHtml: settingsHtml, act: act,
+  window.MPWeb = { start: start, redraw: redraw, header: header, settingsHtml: settingsHtml, act: act, instantPlan: instantPlan, moreHtml: moreHtml,
     _test: { shiftDates: shiftDates, backend: function () { return B; }, space: function () { return space; } } };
 })();

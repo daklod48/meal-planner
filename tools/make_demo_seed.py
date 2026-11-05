@@ -104,7 +104,15 @@ try:
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 
+fd = json.loads(files['foods/foods.json'])
+fd['updated'] = SEEN  # foods.py stamps the build time; the prices were read at SEEN
+files['foods/foods.json'] = json.dumps(fd, ensure_ascii=False, indent=1) + '\n'
 res = json.loads(files['results/%s.json' % rid])
+# cook.py stamps "finished" with the real clock of the build day; the demo moves every date forward again when it
+# starts, so a build-day stamp would land in the future (lab run 0 saw "Done 21. 11. 2026" on 5. 11.). The run's own
+# time is the truth here: the prices were read at SEEN, the result finished 15 minutes later.
+res['finished'] = '2026-10-19T10:45:00+02:00'
+files['results/%s.json' % rid] = json.dumps(res, ensure_ascii=False, indent=1) + '\n'
 best = res['scored']['picks'].get('balance') or res['scored']['ranked'][0]['id']
 row = next(x for x in res['scored']['ranked'] if x['id'] == best)
 opt = next(o for o in res['options'] if o['id'] == best)
