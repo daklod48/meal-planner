@@ -14,6 +14,8 @@ run t_watch.py python3 tests/t_watch.py
 run t_app.mjs node tests/t_app.mjs
 run t_shops.mjs node tests/t_shops.mjs
 run t_web.mjs node tests/t_web.mjs
+run t_publish.py python3 tests/t_publish.py
+run publish-check python3 tools/make-share-copy.py --check-publish
 if [ -n "$MP_FBTOOLS" ]; then
   FB="$MP_FBTOOLS/node_modules/.bin/firebase emulators:exec --project demo-meal-planner"
   run t_rules.mjs sh -c "$FB --only firestore 'node tests/t_rules.mjs'"

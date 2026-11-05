@@ -34,5 +34,12 @@ then open http://localhost:8000/. Without a Firebase config it runs in practice 
 ## Set up Firebase and GitHub Pages
 `FIREBASE-SETUP.md`, click by click.
 
+## Before every publish (public repository)
+The repository is public and GitHub publishes its whole history. Run once per clone:
+```
+python3 tools/make-share-copy.py --install-hook
+```
+From then on every `git push` first runs `python3 tools/make-share-copy.py --check-publish` and is refused if any commit, old or new, holds a `_PAST-WORK` or `data/` file, a word from your local `data/share-forbid.txt` (names, account names, machine name; accents and case ignored), a scheduled-task id, a session id, a private key, or an e-mail address outside the test domains. `data/` and `_PAST-WORK/` are git-ignored and stay on your computer.
+
 ## Licence notes
 App code: the owner's. `app/vendor/firebase/`: Apache License 2.0 (Google LLC).

@@ -56,6 +56,7 @@ What the rules allow, in plain words: a signed-in account (the demo too) may rea
 **Is it safe to publish these values?** Yes. They are not passwords: every Firebase web page sends them to its visitors' browsers, and HelloDorm's `config.js` shows its own. They only say which project to talk to; the rules of step 5 decide what anyone may do there. Never put a **service account key** (a JSON file with `"private_key"` in it) into the repository; the app does not need one.
 
 ## Step 7. Publish with GitHub Pages (3 min)
+0. Before the first push, and in every new clone: `python3 tools/make-share-copy.py --install-hook`, then `python3 tools/make-share-copy.py --check-publish` must print **OK**. Put your own private words (your name, your Rohlík display name, your e-mail, your computer's user name) one per line into `data/share-forbid.txt`; that file never leaves your computer. The hook then blocks any push that would publish them.
 1. Open https://github.com/daklod48/meal-planner > **Settings** (top bar of the repository) > **Pages** (left list, under "Code and automation").
 2. **Build and deployment** > **Source**: **Deploy from a branch**. **Branch**: `main`, folder `/ (root)` > **Save**.
 3. Wait one or two minutes, refresh the page: it shows "Your site is live at https://daklod48.github.io/meal-planner/".

@@ -136,7 +136,7 @@ def check_zip(path, verbose=True):
                 except Exception:
                     continue
                 for w in words:
-                    if w.lower() in text.lower():
+                    if fold(w) in fold(text):  # accents and case ignored (2026-11-05)
                         words_hit.append('%s: contains "%s"' % (n, w))
                 for m in EMAIL_RE.findall(text):
                     if not email_ok(m):
