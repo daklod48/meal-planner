@@ -3,7 +3,7 @@
 # The Firebase checks (t_rules, t_web on the emulators) need MP_FBTOOLS: see tests/README.md.
 export LC_ALL=C.UTF-8
 fails=0
-run() { label=$1; shift; out=$("$@" 2>&1); code=$?; echo "$out" | grep -E "^(PASS|FAIL|SKIP)|checks, [0-9]+ failed" | tail -1 | sed "s#^#$label: #"; [ $code -eq 0 ] || [ $code -eq 2 ] || fails=$((fails+1)); }
+run() { label=$1; shift; out=$("$@" 2>&1); code=$?; echo "$out" | grep -E "^(PASS|FAIL|SKIP|OK)|checks, [0-9]+ failed" | tail -1 | sed "s#^#$label: #"; [ $code -eq 0 ] || [ $code -eq 2 ] || fails=$((fails+1)); }
 run t_formulas.mjs node tests/t_formulas.mjs
 run t_words.mjs node tests/t_words.mjs
 run t_contrast.mjs node tests/t_contrast.mjs
