@@ -21,10 +21,11 @@ _Written in build session 1 (2026-10-19); session 3, 4 and 5 additions marked be
 ## profile.json
 ```
 { "id", "name", "lang": "en"|"cs", "created", "hidden": bool,
-  "body": {"sex": "m"|"f", "birth_date": "YYYY-MM-DD", "height_cm"},
-  "activity": {"pal": 1.53|1.76|2.25|own number},
+  "body": {"sex": "m"|"f", "birth_date": "YYYY-MM-DD", "height_cm",
+           "life_stage": "none"|"pregnant"|"lactating", "trimester": 1|2|3|null, "lactation_period": "0-6"|"7-12"|null},  (life stage since 2026-11-05; missing = none)
+  "activity": {"pal": 1.53|1.76|2.25|own number|null},  (null = not given, counted as low active since 2026-11-05)
   "goal": {"type": "gain"|"typed"|"maintain", "gain_kg", "weeks", "surplus_pct" (null = automatic),
-           "protein_g_per_kg", "typed_protein_g", "typed_kcal", "start_date", "start_kg"},
+           "protein_g_per_kg" (null = the DRI for this body, since 2026-11-05), "typed_protein_g", "typed_kcal", "start_date", "start_kg"},
   "budget": {"amount", "period": "day"|"week"|"month", "currency": "CZK"},
   "cards": ["rohlik-xtra","billa-club","kaufland-card","lidl-plus","albert","penny","tesco-clubcard"],
   "cards_other": [{"key": "other-<slug>", "name"}],
@@ -127,3 +128,6 @@ Session 4 (2026-10-19) additions, written by `tools/dine.py` (Order online and E
 - `cart` (order, Wolt only): `filled`, `cart_total_ours`, `plan_before_cart`, `diff_pct`, `problems` (also basket lines not in the plan), `covers` ("day 1 (order again each day)" or "the whole plan"), `fees_from_basket`. `basket.tsv`: `item qty line_price`; lines of the same item are added up; optional rows `_delivery_fee` and `_service_fee` carry the fees the basket shows, and the cost is re-counted with them and the minimum order.
 - menicka rows: `desc` = `A:<allergen numbers>` (EU 1-14, as the menu prints them); dishes keep them in `allergens`.
 - `steps/dish-table.json`: how a dish without a label is estimated (types, components with USDA FNDDS values and FDC numbers, word lists, price floor, weight rules, `meat_led_types`, `pieces_max`, `main_salad_words`, `allergens` (the 14 EU allergens: words he may type, dish words, menu numbers), `changes`).
+
+## Web app (2026-11-05)
+The same files, in the signed-in account instead of a folder: Firestore `spaces/<account id>/files/<path encoded with encodeURIComponent>`, one record per file `{ "path": "data/users/x/profile.json", "text": "<the file exactly as on disk>", "updated": <server time>, "device": "<8 letters>" }`. Who writes which file is unchanged; a result file added in Settings is copied in unchanged after the checks in HOW-IT-WORKS 8.2.

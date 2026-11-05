@@ -39,6 +39,7 @@ The shop list of a place (which shops are within walking reach, how far, opening
 4. Order on the shop site yourself (the cart is already filled). Weigh yourself now and then and type it under History: the app computes the targets from your latest weight.
 
 ## Where the numbers come from
+- Since 5 November 2026 the daily targets are the Dietary Reference Intakes for each person's age, sex, weight, pregnancy or breastfeeding: protein RDA 0.8 g per kg for adults (children, pregnancy 1.1 and breastfeeding 1.3 from the table), energy from the Estimated Energy Requirement equations. Institute of Medicine. (2005). *Dietary Reference Intakes for energy, carbohydrate, fiber, fat, fatty acids, cholesterol, protein, and amino acids*. National Academies Press. https://doi.org/10.17226/10490 ; table: https://www.ncbi.nlm.nih.gov/books/NBK56068/table/summarytables.t4/ . A higher protein number (for example 1.6 g per kg for muscle gain, sources below) is now your own choice in the profile.
 - Protein 1.6 to 2.2 g per kg of body weight a day, calorie surplus 10 to 20 %, gain 0.25 to 0.5 % of body weight a week: Iraki, J., Fitschen, P., Espinar, S., & Helms, E. (2019). Nutrition recommendations for bodybuilders in the off-season: A narrative review. *Sports, 7*(7), 154. https://doi.org/10.3390/sports7070154
 - Protein 1.4 to 2.0 g/kg/day: Jäger, R., et al. (2017). International Society of Sports Nutrition position stand: Protein and exercise. *Journal of the International Society of Sports Nutrition, 14*, 20. https://doi.org/10.1186/s12970-017-0177-8
 - No extra muscle gain above 1.62 g/kg/day: Morton, R. W., et al. (2018). A systematic review, meta-analysis and meta-regression of the effect of protein supplementation on resistance training-induced gains in muscle mass and strength. *British Journal of Sports Medicine, 52*(6), 376-384. https://doi.org/10.1136/bjsports-2017-097608
@@ -92,6 +93,7 @@ Seznam obchodů pro jedno místo (které obchody jsou v dosahu pěšky, jak dale
 4. Objednejte na stránce obchodu sami (košík je už naplněný). Občas se zvažte a zapište to v Historii: aplikace počítá cíle z vaší poslední váhy.
 
 ## Odkud jsou čísla
+Od 5. listopadu 2026 jsou denní cíle referenční hodnoty příjmu (DRI) podle věku, pohlaví, váhy, těhotenství nebo kojení: bílkoviny 0,8 g na kg pro dospělé (děti, těhotenství 1,1 a kojení 1,3 podle tabulky), energie podle rovnic odhadované energetické potřeby (EER). Zdroj: Institute of Medicine (2005), https://doi.org/10.17226/10490 . Vyšší číslo bílkovin (například 1,6 g na kg pro růst svalů) je teď vaše vlastní volba v profilu.
 Stejné zdroje jako v anglické části výše (Iraki et al., 2019; Jäger et al., 2017; Morton et al., 2018; Mifflin et al., 1990; FAO/WHO/UNU, 2004; USDA FoodData Central pro odhady jídel v restauracích).
 
 ## Soukromí a bezpečnost, prostě řečeno

@@ -11,6 +11,16 @@
 | `python3 tests/t_watch.py` | tools/watch.py (the nightly price watch, session 5) on a temporary data folder: which products are watched (every option of results of the last 14 days, picked plans of the last 30 days, Rohlík only, Rohlík ready meals of Order plans too, error and old results never, cap and batches of 20), ingest (5 % line: 4.9 % stored but not reported, 5.0 % reported; sold out, back in stock, a missing row = sold out; ids not watched ignored; second run the same day writes -2.json and says "no change"; foods.json gets the new price with the old one in price_history, ready meals compared with yesterday's watch; watch_pct from app-settings; wrong header, empty file and missing --tsv refused) | 3 s |
 | `node tests/t_words.mjs` | every word in English and Czech | 1 s |
 | `node tests/t_contrast.mjs` | text contrast at least 4.5 : 1, light and dark | 1 s |
+| `LC_ALL=C.UTF-8 node tests/t_web.mjs` | the web app (`index.html`, 2026-11-05) on the practice backend: home page with demo / sign up / sign in and a worked example computed by planner.js, e-mail and password errors named, login kept after a reload, a pregnancy profile gets 1.1 g/kg and +340 kcal with source links, phone and laptop pages of one account see each other's changes live, sign out leaves nothing on screen, two accounts kept apart, demo with dates moved to today and the Cook result with "same scores", the result-file bridge (good, broken, unknown id), Keep my data, 390 px without sideways scroll, buttons 44 px, no console errors (41 checks) | 40 s |
+| `MP_BACKEND=firebase $MP_FBTOOLS/node_modules/.bin/firebase emulators:exec --project demo-meal-planner --only auth,firestore "node tests/t_web.mjs"` | the same checks with the real Firebase SDK (`app/vendor/firebase`) against the Auth and Firestore emulators with `firestore.rules`, plus: the files are in Firestore and not in the browser (43 checks) | 60 s |
+| `$MP_FBTOOLS/node_modules/.bin/firebase emulators:exec --project demo-meal-planner --only firestore "node tests/t_rules.mjs"` | `firestore.rules`: own space only (read, list, write, delete), signed-out visitors refused, the demo account limited to its own space, record shape (extra or missing field, client clock, over 900 kB, path outside data/, text not a string), nothing outside spaces/ (23 checks; loosened rules fail 10) | 20 s |
+| `sh tests/run_all.sh` | every suite above, one line each | 3 min |
 | `node tests/shots.mjs light 1200` | three screenshots into tests/out/ (after t_app) | 5 s |
 
-Needs Node 22, Python 3.10+, Playwright with Chromium (`/opt/npm-tools/node_modules/playwright`). `tests/out/` is scratch; never sent.
+Needs Node 22, Python 3.10+, Playwright with Chromium (found by `tests/pw.mjs`: `$PLAYWRIGHT_PATH`, `/opt/npm-tools/...`, `/opt/node-tools/...`, or a `playwright` package). `tests/out/` is scratch; never sent.
+
+The Firebase suites also need Java 11+ and a folder with the emulator tools, given as `MP_FBTOOLS`:
+```
+mkdir fbtools && cd fbtools && npm init -y && npm install --legacy-peer-deps firebase-tools@14 @firebase/rules-unit-testing@4 firebase@12.19.0
+```
+The project id `demo-meal-planner` is an emulator-only project: nothing reaches Google. Since 2026-11-05 `t_shops.mjs` uses `tests/fixtures/shops.json` when `data/shops/shops.json` is absent (a copy without `data/`).

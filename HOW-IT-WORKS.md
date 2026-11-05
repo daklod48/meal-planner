@@ -120,7 +120,7 @@ Four rules hold the contract together:
 
 ## 5. One request, end to end (Cook mode, real numbers from 19/10)
 
-1. He fills New plan: 3 days, cook, budget 480 CZK. The app writes `requests/REQ-20261019-100250-demo-user.json` with targets 150 g protein, 2,500 kcal a day.
+1. He fills New plan: 3 days, cook, budget 480 CZK. The app writes `requests/REQ-20261019-100250-<user>.json` with targets 150 g protein, 2,500 kcal a day.
 2. He opens Claude desktop > Scheduled > "Meal Planner run" > Run now. The task follows `steps/RUN-STEPS.md`.
 3. `cook.py pick` returns that request. `cook.py account` checks the Rohlík account e-mail matches the profile.
 4. `cook.py terms` prints the search words and which shops can be skipped (prices read within 48 hours). Claude reads Rohlík through its connector and Košík, Tesco, kupi.cz through Chrome, writing TSV files.
@@ -169,4 +169,43 @@ Fix: two separate questions. Did the price or a card price move? Then `price_cha
 
 t_formulas 324 cases, t_words 444 keys, t_contrast 40 pairs, t_foods 23, t_cook 59, t_dine 321, t_watch 38, t_app 111, t_shops 41 (t_shops reads the real `data/shops/shops.json`; checked here with the 19/10 survey fixture in a scratch copy, since `data/` is never in the zip). All pass.
 
-This file is not in the share copy (`tools/make-share-copy.py` sends a fixed list of root files): it quotes a real request id, and the kit's own "no personal data" check would refuse it.
+This file is not in the share copy (`tools/make-share-copy.py` sends a fixed list of root files). Since 5 Nov 2026 it no longer quotes a real request id, so it can sit in the public GitHub repository.
+
+## 8. The web app and DRI targets (second session of 2026-11-05)
+
+### 8.1 Daily targets from the Dietary Reference Intakes (planner 1.2)
+
+Anchor: before, every person without a typed number got 1.6 g protein per kg (a sports-nutrition figure, Morton et al., 2018) and energy = Mifflin resting energy x activity. Now the default is the **Dietary Reference Intakes** (DRI = the US and Canadian National Academies' tables of how much of each nutrient healthy people need, by age, sex and life stage), and a person's own g/kg is optional.
+
+- **Protein** = the **Recommended Dietary Allowance** (RDA = the amount that covers 97 to 98 of 100 healthy people) in g per kg of body weight: age 1 to 3: 1.05; 4 to 8: 0.95; 9 to 13: 0.95; 14 to 18: 0.85; 19 and over: 0.8; pregnancy 1.1; breastfeeding 1.3. Example: a 30-year-old woman of 62 kg gets 0.8 x 62 = 49.6 g; pregnant, 1.1 x 62 = 68.2 g.
+- **Energy to keep the weight** = the **Estimated Energy Requirement** (EER) equation of the same report, with height in metres and a physical activity factor (PA) for four levels (sedentary, low active, active, very active; the profile's PAL 1.53 / 1.76 / 2.25 map to low active / active / very active; "Not sure" counts as low active). Example: man, 23, 178 cm, 68.4 kg, active (PA 1.25): 662 - 9.53 x 23 + 1.25 x (15.91 x 68.4 + 539.6 x 1.78) = 3,003.73 kcal. Pregnancy adds 0 / 340 / 452 kcal by trimester; breastfeeding adds 330 (baby 0 to 6 months) or 400 (7 to 12 months). Children use the child equations (ages 1 to 2: 89 x kg - 100 + 20).
+- The gain goal still adds the 10 to 20 % surplus of Iraki et al. (2019) on top, and warns that a gain goal is meant for adults.
+- Where: `DRI`, `dri()` and `targets()` in `app/js/planner.js`, the identical twin in `tools/planner.py`. Every target is shown with its rule, this body's numbers and a source link (profile form, "Where these targets come from" above the plan form, Settings > Sources).
+- Sources: Institute of Medicine (2005), https://doi.org/10.17226/10490, and the summary table https://www.ncbi.nlm.nih.gov/books/NBK56068/table/summarytables.t4/. **Not re-checked against the pages on 5 Nov 2026**: the build machine's network refused both sites (and FAO, Wikipedia). The numbers were entered from the report as known to the builder, the app says so under each target, and `tests/t_formulas.mjs` holds five sums worked on paper. Check them against the table once before telling people to rely on them.
+- Tests: 130 new twin cases (every age group, both sexes, the activity edges 1.39 / 1.4 / 1.6 / 1.9, pregnancy, breastfeeding, missing trimester, age under 1); the first 324 cases are byte-identical. The two t_app checks that hard-coded 2,958 and 3,402 kcal (Mifflin) now compute the expected number from `planner.js`.
+
+### 8.2 The web app (`index.html`)
+
+Anchor: HelloDorm (`daklod48/hellodorm`, HOW-IT-WORKS section 4). Same pattern: the link lands on a home page; **Sign in**, **Sign up**, or **Try the demo account**; Firebase keeps the login; each account's data is in Firestore; the demo is an anonymous account with its own copy of sample data.
+
+The one idea that kept the old code intact: **a virtual folder.** `store.js` saves through a folder handle (the File System Access API). `app/js/cloud/vfs.js` is an object with the same methods (`getDirectoryHandle`, `getFileHandle`, `getFile().text()`, `createWritable().write/close`, `entries`) whose files live in the signed-in account. So `commit`, undo, the hash check before a write, the read-back before "Saved", the change log written last, the codes never reused, and the whole file contract of `FORMATS.md` work unchanged; only the place the files sit is new.
+
+```
+ phone / laptop browser                                   Firebase (Google)
+ index.html                                               Authentication: e-mail+password, Google, anonymous (demo)
+   app.js (screens) -> store.js (commit, undo, save)      Firestore:
+       -> vfs.js (virtual folder)                           spaces/<account id>/files/<data/users/x/profile.json, encoded>
+           -> backends.js  --setDoc / onSnapshot-->           { path, text, updated: server time, device }
+ another device signed in to the same account <--onSnapshot-- (a change arrives in about a second)
+```
+
+- **Backends** (`app/js/cloud/backends.js`): `firebase` when `app/js/firebase-config.js` holds a config; otherwise **practice** (the same calls kept in this browser's localStorage, labelled on screen). The tests run both.
+- **Live sync:** the Firestore listener reports files changed by another device; if nothing is being typed and nothing is unsaved, the app reloads its data and redraws the same screen ("Updated from your other device"); otherwise it waits and says so. A save that would overwrite a newer version from another device is refused by the existing "changed outside" rule (now worded "changed on another device").
+- **Demo:** `app/demo/seed.json` = the test person Tomáš Dvořák, 7 weigh-ins, a picked plan and a real Cook result made by `tools/make_demo_seed.py` (it runs `cook.py` ingest / borrow / options / result and `planner.py score-result` on the 19/10 shop rows in `tests/fixtures/cook/`). When a demo starts, every date moves forward by whole days so the newest is from the last day (birth date excepted). **Keep my data** links an e-mail and password to the demo account (Firebase `linkWithCredential`), so nothing is lost.
+- **Prices from Claude's runs:** Claude's run task reads files on the owner's laptop, not Firestore. Settings > "Prices from Claude's runs" downloads a waiting request file; the owner drops it into `MealPlanner/data/requests`, runs the task, and adds the result file back. The result is checked (whole JSON, a REQ id that exists in this account, options present) and stored unchanged as `data/results/<id>.json`. A direct connection (Claude reading Firestore) would need a service-account key, which is a real secret; deliberately not built.
+- **Security rules** (`firestore.rules`): an account reads and writes only `spaces/<its id>/files/*`; a record must be exactly path / text (under 900 kB) / server time / device; everything else is closed. 23 checks in `tests/t_rules.mjs` on Google's emulator; loosening the rules makes 10 of them fail.
+- **Firebase SDK** 12.19.0 is copied from the npm package into `app/vendor/firebase/` (the CDN www.gstatic.com was blocked on the build machine, and a local copy also means the app never depends on it). Only change: the absolute import of `firebase-app.js` points at the local file.
+- **No personal data:** the friend's first name was removed from a fixture and from this file; the demo uses the kit's test person. Still in the repository: the place "Blanice kolej" (a public student dorm) and "Westfield Chodov" in fixtures, cards and the demo, as before (owner decision pending since 19/10).
+
+### 8.3 Test totals after this session
+The 1,401 checks of 7.4 all pass, inside these totals: t_formulas 454 cases (324 old + 130 new), t_words 584 keys (444 old + 140 new), t_contrast 40, t_foods 23, t_cook 59, t_dine 321, t_watch 38, t_app 111, t_shops 41 (now runs from the repo with the 19/10 fixture when `data/` is absent). New: t_web 41 (practice backend) and 43 (real Firebase SDK on the emulators, two more checks that the files are in Firestore and not in the browser), t_rules 23. `sh tests/run_all.sh` runs them all.
