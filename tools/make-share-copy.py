@@ -220,7 +220,12 @@ def check_publish(verbose=True):
     """The check for the PUBLIC repository: what git would push, including every older commit."""
     words = forbid_words()
     hits = []
-    commits = [c for c in git('rev-list', '--all').split() if c]
+    # What a push would publish: commits not yet on any remote. Commits already on the remote are public already, so
+    # scanning them changes nothing (and the owner's own first commit there carries the owner's GitHub e-mail).
+    # Without a remote every commit is scanned.
+    has_remote = bool(git('remote').strip())
+    commits = [c for c in git('rev-list', '--all', '--not', '--remotes').split() if c] if has_remote else [c for c in git('rev-list', '--all').split() if c]
+    published = len([c for c in git('rev-list', '--remotes').split() if c]) if has_remote else 0
     blobs = {}  # blob id -> first path seen
     for c in commits:
         for ln in git('ls-tree', '-r', c).splitlines():
@@ -238,7 +243,8 @@ def check_publish(verbose=True):
     for c in commits:
         meta = git('show', '-s', '--format=%an <%ae> | %cn <%ce> | %B', c)
         scan_text('commit %s author / message' % c[:7], meta, words, hits)
-    for t in [x for x in git('tag', '-l').split() if x]:
+    pushed_tags = set(x.split('refs/tags/')[-1] for x in git('ls-remote', '--tags', 'origin').split() if 'refs/tags/' in x) if has_remote else set()
+    for t in [x for x in git('tag', '-l').split() if x and x not in pushed_tags]:
         scan_text('tag ' + t, git('cat-file', '-p', 'refs/tags/' + t), words, hits)
     seen, out = set(), []
     for h in hits:
@@ -249,7 +255,7 @@ def check_publish(verbose=True):
         print('FAIL publish check: %d problem(s). Do not push.\n  ' % len(out) + '\n  '.join(out[:60]))
         return False
     if verbose:
-        print('OK publish check: %d commits, %d files scanned (now and in history); no _PAST-WORK or data/ path, no scheduled-task or session id, no private key, no e-mail outside test domains. %s' % (
+        print(('(%d commits already on the remote skipped) ' % published if published else '') + 'OK publish check: %d commits, %d files scanned (now and in history); no _PAST-WORK or data/ path, no scheduled-task or session id, no private key, no e-mail outside test domains. %s' % (
             len(commits), len(blobs), ('None of the %d words in data/share-forbid.txt found.' % len(words)) if words else 'NOTE: no data/share-forbid.txt, so names and account words were not searched for.'))
     return True
 
