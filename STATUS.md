@@ -1,9 +1,8 @@
-# STATUS (2026-11-06)
-- State: web app built and tested locally (practice mode until the Firebase config is pasted); NOT pushed, NOT published.
-- Last commit (local): the one that added this file, "STATUS and HAND-OVER 2026-11-06" (the commit before it: 7e46543).
-- Live link: none yet (planned https://daklod48.github.io/meal-planner/ after FIREBASE-SETUP.md steps 1 to 7).
-- Lab score: run 0 46/80, run 1 54/80 (kept, tag lab-run-01). Tracker: LAB/tracker.html.
-- Tests: all pass: 1,401 original checks plus t_web 49 / 51 (emulators), t_rules 23, t_publish 22; publish check OK (13 commits).
-- Next step: owner creates the public repo daklod48/meal-planner; then Claude adds the remote and pushes (the pre-push hook runs the publish check).
-- Owner steps: create the repo (empty, public); FIREBASE-SETUP.md steps 1 to 6; add your e-mail and Windows user name to data/share-forbid.txt (local only).
-- Then: lab run a (demo result short on calories) or b or c, as the owner chooses.
+# STATUS (2026-11-07)
+- State: code pushed to the public repo https://github.com/daklod48/meal-planner (branch main); app runs in practice mode until the Firebase config is pasted.
+- Last commit: this one, "STATUS: pushed, Pages pending" (before it: merge d6fe5e4 with the repo's Initial commit; 11818bb included).
+- Live link: https://daklod48.github.io/meal-planner/ NOT live yet: GitHub Pages is not switched on (the session's proxy refuses the Pages API); not checkable from here (github.io blocked).
+- Lab score: run 0 46/80, run 1 54/80 (kept). Tags lab-run-00 / lab-run-01 exist locally only (the proxy refuses tag pushes, HTTP 403).
+- Tests: all pass (1,401 original + t_web 49 / 51, t_rules 23, t_publish 22); publish check OK before the push (16 commits).
+- Owner steps: (1) repo Settings > Pages > Source: Deploy from a branch > Branch: main, folder / (root) > Save; (2) FIREBASE-SETUP.md steps 1 to 6; (3) add your e-mail and Windows user name to the local data/share-forbid.txt.
+- Next: after (1), open the link on phone and laptop (FIREBASE-SETUP.md step 8); after (2), paste the config and push; then lab run a, b or c.
