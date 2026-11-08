@@ -4,9 +4,20 @@
 // Reads only; never touches the cart. Output columns are what tools/cook.py ingest --source kosik expects.
 window.MPK = async function (terms, perTerm) {
   perTerm = perTerm || 3;
-  const out = ['term\tid\tname\tprice\trecommended\tclub_price\tqty\tqty_unit\tin_stock_today\tkcal\tprotein\tfat\tcarbs\tsalt\tslug'];
+  const out = ['term\tid\tname\tprice\trecommended\tclub_price\tqty\tqty_unit\tin_stock_today\tkcal\tprotein\tfat\tcarbs\tsalt\tslug\tsale_until'];
   const clean = v => String(v == null ? '' : v).replace(/[\t\n\r]+/g, ' ');
   const today = new Date().toLocaleDateString('sv-SE'); // the browser's local date, YYYY-MM-DD
+  // 2026-11-08: the last day of a sale, if the shop's own data has one: any date-valued field whose NAME ends in end / valid /
+  // until / to (for example endDate, validTo), searched two levels deep. Field names not confirmed on a live page yet
+  // (RUN-STEPS D8); empty when nothing is found, never a guess. cook.py turns it into sale_until (YYYY-MM-DD).
+  const findEnd = (o, depth) => {
+    if (!o || typeof o !== 'object' || (depth || 0) > 2) return '';
+    for (const [k, v] of Object.entries(o)) {
+      if (/(end|valid|until|to)(date|time|at)?$/i.test(k) && typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0, 10);
+    }
+    for (const v of Object.values(o)) { const f = findEnd(v, (depth || 0) + 1); if (f) return f; }
+    return '';
+  };
   for (const t of terms) {
     let r;
     try { r = await fetch('/api/front/page/products/flexible?vendor=1&slug=vyhledavani&limit=30&platform=web&search_term=' + encodeURIComponent(t)).then(x => x.json()); }
@@ -25,7 +36,7 @@ window.MPK = async function (terms, perTerm) {
       const av = (x.availability || [])[0] || {};
       out.push([t, x.id, x.name, x.price, x.recommendedPrice, x.loyaltyClubBenefitsPrice ?? '', (x.productQuantity || {}).value, (x.productQuantity || {}).unit,
         (av.date <= today && av.quantity > 0) ? 'yes' : 'no',
-        n.kcal ?? '', n.protein ?? '', n.fat ?? '', n.carbs ?? '', n.salt ?? '', x.url.replace(/^\//, '')].map(clean).join('\t'));
+        n.kcal ?? '', n.protein ?? '', n.fat ?? '', n.carbs ?? '', n.salt ?? '', x.url.replace(/^\//, ''), Number(x.recommendedPrice) > Number(x.price) ? findEnd(x) : ''].map(clean).join('\t'));
     }
   }
   document.documentElement.setAttribute('translate', 'no');

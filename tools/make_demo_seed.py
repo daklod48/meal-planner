@@ -22,6 +22,11 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 FX = os.path.join(ROOT, 'tests', 'fixtures', 'cook')
 OUT = os.path.join(ROOT, 'app', 'demo', 'seed.json')
 SEEN = '2026-10-19T10:30:00+02:00'
+# 2026-11-08: Rohlík re-read through the connector (batch_search_products + get_product_details, read only): 4 products each of
+# tvaroh, oats and rice, with the connector's sale end (prices.saleValidTill) -> tests/fixtures/cook/rohlik-2026-11-08.tsv.
+# They give the demo real backups and real sale end dates. Košík, Tesco and the leaflets stay as read on 19/10.
+SEEN2 = '2026-11-08T15:46:00+01:00'
+FINISHED = '2026-11-08T15:50:00+01:00'
 USER = 'tomas-dvorak'
 
 sys.path.insert(0, os.path.join(ROOT, 'tools'))
@@ -41,7 +46,8 @@ profile = {
     'cooking': {'max_cook_min': 40, 'meals_per_day': 3},
     'weights': dict(planner.DEFAULT_WEIGHTS),
 }
-weighins = [('2026-09-07', 72.4), ('2026-09-14', 72.6), ('2026-09-21', 72.5), ('2026-09-28', 72.9), ('2026-10-05', 73.1), ('2026-10-12', 73.4), ('2026-10-19', 73.6)]
+weighins = [('2026-09-07', 72.4), ('2026-09-14', 72.6), ('2026-09-21', 72.5), ('2026-09-28', 72.9), ('2026-10-05', 73.1), ('2026-10-12', 73.4), ('2026-10-19', 73.6),
+            ('2026-10-26', 73.7), ('2026-11-02', 73.8), ('2026-11-08', 73.9)]
 history = {
     'version': 1,
     'weighins': [{'id': 'W-%04d' % (i + 1), 'date': d, 'kg': kg, 'note': ''} for i, (d, kg) in enumerate(weighins)],
@@ -53,7 +59,7 @@ history = {
 changes = {'list': [{'id': 'C-0001', 'at': profile['created'], 'who': profile['name'], 'label': 'profile_created',
                      'ops': [{'file': 'profile', 'path': '', 'old': None, 'new': profile}], 'no_undo': True}]}
 
-tg = planner.targets(profile, weighins[-1][1], '2026-10-19')
+tg = planner.targets(profile, weighins[-1][1], '2026-11-08')
 assert tg['ok'], tg
 
 tmp = tempfile.mkdtemp(prefix='mp-demo-')
@@ -71,6 +77,10 @@ try:
     req['location'] = profile['locations'][0]
     req['meals_usual'] = 3
     req['rules'] = {'cart_only_never_pay': True, 'replan_if_cart_off_pct': 10, 'stale_days': 14, 'planner_version': planner.VERSION}
+    # the demo request is the 08/11 re-plan (its result uses the Rohlík prices read then); starts the next day
+    req['id'] = 'REQ-20261108-154000-tomas-dvorak'
+    req['created'] = '2026-11-08T15:40:00+01:00'
+    req['start_date'] = '2026-11-09'
     rid = req['id']
     json.dump(req, open(os.path.join(tmp, 'data', 'requests', rid + '.json'), 'w', encoding='utf-8'), ensure_ascii=False)
 
@@ -82,6 +92,7 @@ try:
 
     for src in ('rohlik', 'kosik', 'tesco', 'kupi'):
         cook('ingest', rid, '--source', src, '--tsv', os.path.join(FX, src + '.tsv'), '--seen', SEEN)
+    cook('ingest', rid, '--source', 'rohlik', '--tsv', os.path.join(FX, 'rohlik-2026-11-08.tsv'), '--seen', SEEN2)
     cook('borrow', rid)
     cook('options', rid)
     ex = os.path.join(tmp, 'extras.json')
@@ -105,21 +116,21 @@ finally:
     shutil.rmtree(tmp, ignore_errors=True)
 
 fd = json.loads(files['foods/foods.json'])
-fd['updated'] = SEEN  # foods.py stamps the build time; the prices were read at SEEN
+fd['updated'] = SEEN2  # foods.py stamps the build time; the newest prices were read at SEEN2
 files['foods/foods.json'] = json.dumps(fd, ensure_ascii=False, indent=1) + '\n'
 res = json.loads(files['results/%s.json' % rid])
 # cook.py stamps "finished" with the real clock of the build day; the demo moves every date forward again when it
 # starts, so a build-day stamp would land in the future (lab run 0 saw "Done 21. 11. 2026" on 5. 11.). The run's own
 # time is the truth here: the prices were read at SEEN, the result finished 15 minutes later.
-res['finished'] = '2026-10-19T10:45:00+02:00'
+res['finished'] = FINISHED
 files['results/%s.json' % rid] = json.dumps(res, ensure_ascii=False, indent=1) + '\n'
 best = res['scored']['picks'].get('balance') or res['scored']['ranked'][0]['id']
 row = next(x for x in res['scored']['ranked'] if x['id'] == best)
 opt = next(o for o in res['options'] if o['id'] == best)
 history['plans'].append({'id': 'P-0001', 'request_id': rid, 'option_id': best, 'label': opt['label'], 'kind': opt.get('kind'), 'shop': opt.get('shop'),
                          'days': opt.get('days') or req['days'], 'start_date': req['start_date'], 'cost_per_day': row.get('cost_per_day'),
-                         'cost_total': row.get('cost_mine'), 'picked_at': '2026-10-19T10:50:00+02:00'})
-changes['list'].append({'id': 'C-0002', 'at': '2026-10-19T10:50:00+02:00', 'who': profile['name'], 'label': 'plan_picked',
+                         'cost_total': row.get('cost_mine'), 'picked_at': '2026-11-08T15:55:00+01:00'})
+changes['list'].append({'id': 'C-0002', 'at': '2026-11-08T15:55:00+01:00', 'who': profile['name'], 'label': 'plan_picked',
                         'ops': [{'file': 'history', 'path': 'plans#P-0001', 'old': None, 'new': history['plans'][0]}]})
 
 
@@ -131,7 +142,7 @@ files['app-settings.json'] = j({'version': 1, 'lang': None, 'last_user': USER, '
 files['users/%s/profile.json' % USER] = j(profile)
 files['users/%s/history.json' % USER] = j(history)
 files['users/%s/changes.json' % USER] = j(changes)
-seed = {'version': 1, 'made': 'tools/make_demo_seed.py', 'anchor': '2026-10-19T10:50:00+02:00', 'user': USER,
+seed = {'version': 1, 'made': 'tools/make_demo_seed.py', 'anchor': '2026-11-08T15:55:00+01:00', 'user': USER,
         'note': 'Demo data for the web app. Test person only. Cook result made by tools/cook.py on the shop rows read on 19/10/2026.',
         'files': {'data/' + k: v for k, v in sorted(files.items())}}
 os.makedirs(os.path.dirname(OUT), exist_ok=True)

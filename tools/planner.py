@@ -20,7 +20,7 @@ import re
 import sys
 from datetime import date, timedelta
 
-VERSION = '1.2'  # 1.2 (2026-11-05): targets from the DRI (protein RDA, energy EER) instead of fixed 1.6 g/kg and Mifflin x PAL
+VERSION = '1.3'  # 1.3 (2026-11-08): energy top-up pass; best and backup product per category. 1.2: 1.2 (2026-11-05): targets from the DRI (protein RDA, energy EER) instead of fixed 1.6 g/kg and Mifflin x PAL
 EPS = 1e-12
 PAL = {'light': 1.53, 'active': 1.76, 'vigorous': 2.25}  # FAO/WHO/UNU (2004) Table 5.1 means
 DEFAULT_WEIGHTS = {'price': 40, 'speed': 30, 'taste': 20, 'time': 10}
@@ -261,6 +261,78 @@ def targets(profile, weight_kg, as_of):
     return out
 
 
+def rank_products(foods, need, cards):
+    """planner 1.3 (2026-11-08): every product of one food in one shop, best value first (protein share + kcal share of
+    the need per CZK you pay), ties by id; sold-out products ranked too and marked. JS twin: rankProducts()."""
+    need = need or {}
+    nP = num(need.get('protein_g')) or 0
+    nK = num(need.get('kcal')) or 0
+    out = []
+    for f in foods or []:
+        if not _usable(f):
+            continue
+        ep = effective_price(f, cards)
+        g = num(f['pack_g'])
+        p = g * num(f['per100g']['protein']) / 100
+        k = g * num(f['per100g']['kcal']) / 100
+        v = ((p / nP if nP > 0 else 0) + (k / nK if nK > 0 else 0)) / ep['price']
+        out.append({'id': f['id'], 'value': r(v * 100000, 6), 'in_stock': f.get('in_stock') is not False, 'price': ep['price'],
+                    'protein_g': r(p, 2), 'kcal': r(k, 2)})
+    out.sort(key=functools.cmp_to_key(lambda a, b: -1 if a['value'] > b['value'] else (1 if a['value'] < b['value'] else (-1 if a['id'] < b['id'] else (1 if a['id'] > b['id'] else 0)))))
+    return out
+
+
+def alternatives(foods, chosen_id, need, cards):
+    """The backup (best-ranked other product in stock) and the sold-out products ranked above the chosen one. JS twin: alternatives()."""
+    ranked = rank_products(foods, need, cards)
+    backup, sold_above, seen = None, [], False
+    for x in ranked:
+        if x['id'] == chosen_id:
+            seen = True
+            continue
+        if not x['in_stock']:
+            if not seen:
+                sold_above.append(x['id'])
+            continue
+        if backup is None:
+            backup = x['id']
+    return {'ranked': [x['id'] for x in ranked], 'backup': backup, 'sold_out_above': sold_above}
+
+
+def backup_line(line, food, cards):
+    """Packs of the backup that give at least the chosen line's protein (or kcal), and the differences. JS twin: backupLine()."""
+    ep = effective_price(food, cards)
+    g = num(food.get('pack_g'))
+    n = food.get('per100g') or {}
+    p = g * (num(n.get('protein')) or 0) / 100
+    k = g * (num(n.get('kcal')) or 0) / 100
+    lp = num(line.get('protein_g')) or 0
+    lk = num(line.get('kcal')) or 0
+    lc = num(line.get('cost')) or 0
+    if lp > 0 and p > 0:
+        packs = math.ceil(lp / p - EPS)
+    elif k > 0:
+        packs = math.ceil(lk / k - EPS)
+    else:
+        packs = 1
+    if packs < 1:
+        packs = 1
+    return {'id': food.get('id'), 'packs': packs, 'cost': r(packs * ep['price'], 2), 'protein_g': r(packs * p, 2), 'kcal': r(packs * k, 2),
+            'cost_diff': r(packs * ep['price'] - lc, 2), 'protein_diff_g': r(packs * p - lp, 1)}
+
+
+def sale_info(food, as_of):
+    """Regular price, % off, last day (YYYY-MM-DD or None when the source does not say), still running on as_of. JS twin: saleInfo()."""
+    price = num((food or {}).get('price'))
+    reg = num((food or {}).get('regular_price'))
+    if price is None or reg is None or reg <= price:
+        return None
+    su = food.get('sale_until')
+    until = su if isinstance(su, str) and re.match(r'^\d{4}-\d{2}-\d{2}$', su) else None
+    return {'regular_price': r(reg, 2), 'price': r(price, 2), 'sale_pct': r((reg - price) / reg * 100, 0), 'sale_until': until,
+            'active': None if (until is None or not as_of) else as_of <= until}
+
+
 def per_day(amount, period):
     a = num(amount)
     if a is None:
@@ -340,26 +412,46 @@ def basket(foods, need, cards, opts=None):
         if hard is not None and hard < c:
             c = hard
         xi['cap'] = c
-    for _ in range(2000):
-        if remP <= 0 and remK <= 0:
-            break
-        best, best_val = None, 0
-        for f in lst:
-            fid = f['id']
-            x = info[fid]
-            if counts[fid] >= x['cap']:
-                continue
-            gp = min(x['p'], remP) if remP > 0 else 0
-            gk = min(x['k'], remK) if remK > 0 else 0
-            overK = max(0, x['k'] - remK) if remK > 0 else x['k']  # v1.1 (19/10): kcal beyond the target counts against a pack
-            v = ((gp / nP if nP > 0 else 0) + (gk / nK if nK > 0 else 0) - (overK / nK if nK > 0 else 0)) / x['price']
-            if v > best_val + EPS:
-                best, best_val = fid, v
-        if best is None:
-            break
-        counts[best] += 1
-        remP -= info[best]['p']
-        remK -= info[best]['k']
+        # planner 1.3: the cap of the second pass. Energy foods (protein gives less than half their kcal) may go up to 40 % of
+        # the kcal need; lean protein foods keep their protein cap. JS twin: planner.js.
+        c2 = math.floor(share * nK / xi['k']) if xi['k'] > 0 and nK > 0 and 4 * xi['p'] < 0.5 * xi['k'] else c
+        if c2 < c:
+            c2 = c
+        if hard is not None and hard < c2:
+            c2 = hard
+        xi['cap2'] = c2
+    rem = {'P': remP, 'K': remK}
+
+    def fill(cap_key):
+        for _ in range(2000):
+            if rem['P'] <= 0 and rem['K'] <= 0:
+                break
+            best, best_val = None, 0
+            for f in lst:
+                fid = f['id']
+                x = info[fid]
+                if counts[fid] >= x[cap_key]:
+                    continue
+                gp = min(x['p'], rem['P']) if rem['P'] > 0 else 0
+                gk = min(x['k'], rem['K']) if rem['K'] > 0 else 0
+                overK = max(0, x['k'] - rem['K']) if rem['K'] > 0 else x['k']  # v1.1 (19/10): kcal beyond the target counts against a pack
+                v = ((gp / nP if nP > 0 else 0) + (gk / nK if nK > 0 else 0) - (overK / nK if nK > 0 else 0)) / x['price']
+                if v > best_val + EPS:
+                    best, best_val = fid, v
+            if best is None:
+                break
+            counts[best] += 1
+            rem['P'] -= info[best]['p']
+            rem['K'] -= info[best]['k']
+
+    fill('cap')
+    # planner 1.3 (2026-11-08): energy top-up, the twin of planner.js (see the comment there)
+    topup = False
+    if rem['K'] > EPS and rem['P'] <= 0 and nK > 0:  # only once protein is covered
+        before = rem['K']
+        fill('cap2')
+        topup = rem['K'] < before - EPS
+    remP, remK = rem['P'], rem['K']
     items = []
     cost = cost_reg = P = K = 0
     for f in lst:
@@ -375,7 +467,7 @@ def basket(foods, need, cards, opts=None):
         P += c * y['p']
         K += c * y['k']
     return {'items': items, 'cost': r(cost, 2), 'cost_regular': r(cost_reg, 2), 'protein_g': r(P, 2), 'kcal': r(K, 2),
-            'met': remP <= 0 and remK <= 0}
+            'met': remP <= 0 and remK <= 0, 'energy_topup': topup}
 
 
 def option_cost(opt, cards):
@@ -579,6 +671,14 @@ def run_case(c):
         return goal_line(a[0], a[1], a[2])
     if k == 'ageYears':
         return age_years(a[0], a[1])
+    if k == 'rankProducts':
+        return rank_products(a[0], a[1], a[2])
+    if k == 'alternatives':
+        return alternatives(a[0], a[1], a[2], a[3])
+    if k == 'backupLine':
+        return backup_line(a[0], a[1], a[2])
+    if k == 'saleInfo':
+        return sale_info(a[0], a[1])
     raise ValueError('unknown fn ' + k)
 
 

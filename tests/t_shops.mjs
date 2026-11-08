@@ -35,7 +35,14 @@ await ctx.addInitScript(INIT);
 const page = ctx.pages()[0] || await ctx.newPage();
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', e => errors.push('pageerror ' + e.message));
-async function writeF(p, text) { return page.evaluate(async ([p, text]) => { let d = await (await navigator.storage.getDirectory()).getDirectoryHandle('MealPlanner', { create: true }); const a = ('data/' + p).split('/'); for (const n of a.slice(0, -1)) d = await d.getDirectoryHandle(n, { create: true }); const w = await (await d.getFileHandle(a[a.length - 1], { create: true })).createWritable(); await w.write(text); await w.close(); }, [p, text]); }
+async function writeF0(p, text) { return page.evaluate(async ([p, text]) => { let d = await (await navigator.storage.getDirectory()).getDirectoryHandle('MealPlanner', { create: true }); const a = ('data/' + p).split('/'); for (const n of a.slice(0, -1)) d = await d.getDirectoryHandle(n, { create: true }); const w = await (await d.getFileHandle(a[a.length - 1], { create: true })).createWritable(); await w.write(text); await w.close(); }, [p, text]); }
+// 2026-11-08: read the file back before going on. About 1 run in 6 (05/11 code too) reloaded the page before Chrome had
+// finished the private-storage write, and the app found no shops file ("No shops yet"). Only the helper changed, no check.
+async function writeF(p, text) {
+  await writeF0(p, text);
+  return page.evaluate(async ([p, n]) => { let d = await (await navigator.storage.getDirectory()).getDirectoryHandle('MealPlanner'); const a = ('data/' + p).split('/');
+    for (const x of a.slice(0, -1)) d = await d.getDirectoryHandle(x); const f = await (await d.getFileHandle(a[a.length - 1])).getFile(); return (await f.text()).length === n; }, [p, text.length]);
+}
 async function openShops() { await page.reload(); await page.waitForSelector('#nav button', { timeout: 10000 }); await page.click('#nav button[data-view="shops"]'); await page.waitForSelector('#main h2'); }
 const band = w => (typeof w !== 'number' || w > 30) ? 'transit' : w <= 10 ? 'near' : w <= 20 ? 'mid' : 'far';
 

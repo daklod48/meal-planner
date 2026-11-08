@@ -267,6 +267,7 @@
       cards: (p.cards || []).slice(), cards_other: (p.cards_other || []).map(function (x) { return { key: x.key, name: x.name }; }),
       locations: (p.locations || []).map(function (x) { return { id: x.id, name: x.name, address: x.address || '', walk_limit_min: str(x.walk_limit_min) }; }),
       accounts: (p.accounts || []).map(function (x) { return { id: x.id, shop: x.shop, account_name: x.account_name || '', email: x.email || '' }; }),
+      basket_fill: (function () { var b = p.basket_fill || {}; return ['kosik', 'tesco'].filter(function (k) { return b[k] === true; }); })(),
       likes: str(p.likes), dislikes: str(p.dislikes), allergies: str(p.allergies),
       cooking: { max_cook_min: str((p.cooking || {}).max_cook_min || '30'), meals_per_day: str((p.cooking || {}).meals_per_day || '3') }
     };
@@ -334,7 +335,11 @@
           '<div class="field grow"><label for="pf-accounts-' + i + '-account_name">' + h(t('f_account_name')) + '</label><input id="pf-accounts-' + i + '-account_name" name="accounts.' + i + '.account_name" value="' + h(a.account_name) + '" autocomplete="off"></div>' +
           '<div class="field grow"><label for="pf-accounts-' + i + '-email">' + h(t('f_account_email')) + '</label><input id="pf-accounts-' + i + '-email" name="accounts.' + i + '.email" type="email" value="' + h(a.email) + '" autocomplete="off"></div>' +
           '</div><button type="button" class="ghost" data-act="pf-remove" data-list="accounts" data-i="' + i + '">' + h(t('remove')) + '</button></div>';
-      }).join('') + '<button type="button" data-act="pf-add" data-list="accounts">+ ' + h(t('add_account')) + '</button></fieldset>';
+      }).join('') + '<button type="button" data-act="pf-add" data-list="accounts">+ ' + h(t('add_account')) + '</button>' +
+      // 2026-11-08: Claude may fill these baskets in Chrome when you are signed in there (RUN-STEPS F2); never pays
+      '<p class="gist">' + h(t('basket_fill_gist')) + '</p><div class="checks">' + ['kosik', 'tesco'].map(function (k) {
+        return '<label class="check"><input type="checkbox" id="pf-basket-' + k + '" name="basket_fill" value="' + k + '"' + (v.basket_fill.indexOf(k) >= 0 ? ' checked' : '') + '> ' + h(t('basket_fill_' + k)) + '</label>';
+      }).join('') + '</div></fieldset>';
     out += '<fieldset><legend>' + h(t('sec_food')) + '</legend>' +
       '<div class="field"><label for="pf-likes">' + h(t('f_likes')) + '</label><textarea id="pf-likes" name="likes" rows="2" placeholder="' + h(t('ph_likes')) + '">' + h(v.likes) + '</textarea></div>' +
       '<div class="field"><label for="pf-dislikes">' + h(t('f_dislikes')) + '</label><textarea id="pf-dislikes" name="dislikes" rows="2">' + h(v.dislikes) + '</textarea></div>' +
@@ -390,7 +395,11 @@
   function onProfileInput(el) {
     var key = pfKey(), d = drafts[key]; if (!d) return;
     var v = d.values, name = el.name;
-    if (name === 'cards') {
+    if (name === 'basket_fill') {
+      var bi = v.basket_fill.indexOf(el.value);
+      if (el.checked && bi < 0) v.basket_fill.push(el.value);
+      if (!el.checked && bi >= 0) v.basket_fill.splice(bi, 1);
+    } else if (name === 'cards') {
       var i = v.cards.indexOf(el.value);
       if (el.checked && i < 0) v.cards.push(el.value);
       if (!el.checked && i >= 0) v.cards.splice(i, 1);
@@ -456,6 +465,7 @@
       cards: CARDS.map(function (c) { return c.key; }).filter(function (k) { return v.cards.indexOf(k) >= 0; }),
       cards_other: v.cards_other.map(function (c) { return { key: 'other-' + St.slug(c.name), name: c.name.trim() }; }),
       locations: locs, accounts: accs,
+      basket_fill: { kosik: (v.basket_fill || []).indexOf('kosik') >= 0, tesco: (v.basket_fill || []).indexOf('tesco') >= 0 },
       likes: v.likes.trim(), dislikes: v.dislikes.trim(), allergies: v.allergies.trim(),
       cooking: { max_cook_min: num(v.cooking.max_cook_min), meals_per_day: num(v.cooking.meals_per_day) },
       weights: (old && old.weights) || St.clone(P.DEFAULT_WEIGHTS)
@@ -482,7 +492,7 @@
     }
     var old = u.profile, ops = [];
     // Leaf paths for objects, whole values for lists, so undo can be precise.
-    ['name', 'lang', 'likes', 'dislikes', 'allergies', 'cards', 'cards_other', 'locations', 'accounts'].forEach(function (k) { ops.push({ file: 'profile', path: k, value: np[k] }); });
+    ['name', 'lang', 'likes', 'dislikes', 'allergies', 'cards', 'cards_other', 'locations', 'accounts', 'basket_fill'].forEach(function (k) { ops.push({ file: 'profile', path: k, value: np[k] }); });
     ['body', 'activity', 'budget', 'cooking'].forEach(function (k) { Object.keys(np[k]).forEach(function (f) { ops.push({ file: 'profile', path: k + '.' + f, value: np[k][f] }); }); });
     var og = old.goal || {}, goalChanged = og.type !== np.goal.type || og.gain_kg !== np.goal.gain_kg || og.weeks !== np.goal.weeks;
     ['type', 'gain_kg', 'weeks', 'surplus_pct', 'protein_g_per_kg', 'typed_protein_g', 'typed_kcal'].forEach(function (f) { ops.push({ file: 'profile', path: 'goal.' + f, value: np.goal[f] === undefined ? null : np.goal[f] }); });
@@ -581,7 +591,7 @@
       eatout: v.mode === 'eatout' ? { max_walk_min: num(v.max_walk_min) || (loc && loc.walk_limit_min) || 15 } : null,
       targets: { protein_g: tg.protein_g, kcal: tg.kcal, mode: tg.mode, protein_g_per_kg: tg.protein_g_per_kg, weight_kg: newestWeight(u.history) },
       weights: St.clone(p.weights || P.DEFAULT_WEIGHTS), cards: myCards(p), cards_named: myCards(p).map(function (k) { return { key: k, name: cardName(k) }; }),
-      accounts: St.clone(p.accounts || []), likes: p.likes || '', dislikes: p.dislikes || '', allergies: p.allergies || '',
+      accounts: St.clone(p.accounts || []), basket_fill: St.clone(p.basket_fill || { kosik: false, tesco: false }), likes: p.likes || '', dislikes: p.dislikes || '', allergies: p.allergies || '',
       rules: { cart_only_never_pay: true, replan_if_cart_off_pct: S().settings.replan_pct, stale_days: S().settings.stale_days, planner_version: P.VERSION }
     };
     St.writeRequest(req);
@@ -650,10 +660,16 @@
     var tu = res.targets_used; // session 4: Order online and Eat out plan only the meals asked for (2 of 4 meals = half the day's targets)
     if (tu && typeof tu.share === 'number' && tu.share < 1) out += '<p class="muted">' + h(t('targets_meals', { p: fmt(tu.protein_g), k: fmt(tu.kcal), m: tu.meals, u: tu.meals_usual })) + '</p>';
     out += '<p class="muted">' + (agree === true ? h(t('maths_agree')) : agree === false ? '<span class="warn">' + h(t('maths_differ')) + '</span>' : h(t('maths_app_only'))) + '</p>';
-    out += '<h3>' + h(t('three_options')) + '</h3><div class="grid picks">' + ['cheapest', 'fastest', 'balance'].map(function (k) {
-      var id = sc.picks[k], o = optById[id], x = byId[id];
-      if (!o) return '';
-      return '<article class="pick" id="pick-' + k + '-' + h(id) + '"><h4>' + h(t('pick_' + k)) + '</h4>' + optionCard(o, x, r, stale) + '</article>';
+    // 2026-11-08: one option that wins two picks (cheapest AND best balance) is shown once, with both labels
+    var pickOrder = [], pickLabels = {};
+    ['cheapest', 'fastest', 'balance'].forEach(function (k) {
+      var id = sc.picks[k]; if (!optById[id]) return;
+      if (!pickLabels[id]) { pickLabels[id] = []; pickOrder.push({ id: id, k: k }); }
+      pickLabels[id].push(t('pick_' + k));
+    });
+    out += '<h3>' + h(t('three_options')) + '</h3><div class="grid picks">' + pickOrder.map(function (p) {
+      var o = optById[p.id], x = byId[p.id];
+      return '<article class="pick" id="pick-' + p.k + '-' + h(p.id) + '"><h4>' + pickLabels[p.id].map(function (l) { return '<span class="picklabel">' + h(l) + '</span>'; }).join(' ') + '</h4>' + optionCard(o, x, r, stale) + '</article>';
     }).join('') + opts.filter(function (o) { // session 3: the option whose cart Claude filled is always shown, even when it is not one of the three picks
       return o.cart && o.cart.filled === true && byId[o.id] && byId[o.id].rank && [sc.picks.cheapest, sc.picks.fastest, sc.picks.balance].indexOf(o.id) < 0;
     }).map(function (o) {
@@ -662,11 +678,19 @@
     out += '<h3>' + h(t('all_options', { n: opts.length })) + '</h3><div class="tablewrap"><table><thead><tr><th>#</th><th>' + h(t('col_option')) + '</th><th>' + h(t('col_score')) + '</th><th>' + h(t('col_cost_day')) + '</th><th>' + h(t('col_without_card')) + '</th><th>' + h(t('col_protein')) + '</th><th>' + h(t('col_kcal')) + '</th><th>' + h(t('col_p100')) + '</th><th>' + h(t('col_minutes')) + '</th><th>' + h(t('col_distance')) + '</th><th>' + h(t('col_label')) + '</th></tr></thead><tbody>' +
       sc.ranked.map(function (x) {
         var o = optById[x.id], old = o.price_seen && daysSince(o.price_seen) > stale;
-        return '<tr' + (old ? ' class="stale"' : '') + '><td>' + (x.rank || '–') + '</td><td>' + h(o.label) + '<br><small>' + h(tk('kind_', o.kind, 'other')) + (o.shop ? ' · ' + h(o.shop) : '') + '</small></td><td><strong>' + fmt(x.total, 0) + '</strong><br><small>' + h(t('score_parts', { a: fmt(x.s_price), b: fmt(x.s_speed), c: fmt(x.s_taste), d: fmt(x.s_time) })) + '</small></td>' +
-          '<td>' + czk(x.cost_per_day) + flagsHtml(x.flags) + '</td><td>' + czk(x.cost_regular === null || x.cost_regular === undefined ? null : x.cost_regular / (o.days || 1)) + '</td><td>' + fmt(o.protein_g_per_day) + ' g</td><td>' + fmt(o.kcal_per_day) + '</td><td>' + fmt(x.protein_per_100czk, 1) + ' g</td>' +
-          '<td>' + fmt(o.minutes_per_day) + '</td><td>' + distHtml(o) + '</td><td>' + h(tk('label_', o.nutrition_label, 'estimate')) + (o.price_seen ? '<br><small>' + h(t('price_seen', { d: fmtDate(o.price_seen) })) + '</small>' : '') + '</td></tr>';
+        return '<tr' + (old ? ' class="stale"' : '') + '><td>' + (x.rank || '') + '</td><td>' + h(o.label) + '<br><small>' + h(tk('kind_', o.kind, 'other')) + (o.shop ? ' · ' + h(o.shop) : '') + '</small></td><td><strong>' + fmt(x.total, 0) + '</strong><br><small>' + h(t('score_parts', { a: fmt(x.s_price), b: fmt(x.s_speed), c: fmt(x.s_taste), d: fmt(x.s_time) })) + '</small></td>' +
+          '<td>' + czkK(x.cost_per_day) + flagsHtml(x.flags) + '</td><td>' + czkK(x.cost_regular === null || x.cost_regular === undefined ? null : x.cost_regular / (o.days || 1)) + '</td><td>' + fmtK(o.protein_g_per_day, 0, ' g') + '</td><td>' + fmtK(o.kcal_per_day) + '</td><td>' + fmtK(x.protein_per_100czk, 1, ' g') + '</td>' +
+          '<td>' + fmtK(o.minutes_per_day) + '</td><td>' + (distHtml(o) || h(t('not_known'))) + '</td><td>' + h(tk('label_', o.nutrition_label, 'estimate')) + (o.price_seen ? '<br><small>' + h(t('price_seen', { d: fmtDate(o.price_seen) })) + '</small>' : '') + '</td></tr>';
       }).join('') + '</tbody></table></div>';
     out += '<p class="muted">' + h(t('score_how', { a: sc.weights_used.price, b: sc.weights_used.speed, c: sc.weights_used.taste, d: sc.weights_used.time })) + '</p>';
+    // 2026-11-08: every other option as a card too (its shopping list, Pick, Copy), folded under its name and price a day
+    var shown = {}; pickOrder.forEach(function (p) { shown[p.id] = true; });
+    opts.forEach(function (o) { if (o.cart && o.cart.filled === true && byId[o.id] && byId[o.id].rank) shown[o.id] = true; });
+    var others = sc.ranked.filter(function (x) { return !shown[x.id] && optById[x.id] && x.rank; });
+    if (others.length) out += '<h3>' + h(t('other_options', { n: others.length })) + '</h3><div class="others">' + others.map(function (x) {
+      var o = optById[x.id];
+      return '<details class="pick other" id="other-' + h(o.id) + '"><summary><strong>' + h(o.label) + '</strong> · ' + czkK(x.cost_per_day) + ' ' + h(t('per_day_short')) + '</summary>' + optionCard(o, x, r, stale) + '</details>';
+    }).join('') + '</div>';
     return out;
   }
   function resultTargets(r, res) {
@@ -680,7 +704,85 @@
     if (o.walk_min) a.push(t('walk_n', { n: o.walk_min }));
     if (o.transit_min) a.push(t('transit_n', { n: o.transit_min }));
     if (o.delivery_min) a.push(t('delivery_n', { n: o.delivery_min }));
-    return h(a.join(' · ') || '–');
+    return h(a.join(' · '));  // empty when nothing is known (2026-11-08: no dangling dash after "35 min a day")
+  }
+  // Result screens (2026-11-08): an unknown number says so in words, never a dash
+  function czkK(n) { return n === null || n === undefined || isNaN(n) ? h(t('not_known')) : czk(n); }
+  function fmtK(n, d, unit) { return n === null || n === undefined || isNaN(n) ? h(t('not_known')) : fmt(n, d) + (unit || ''); }
+  function packText(it) {
+    if (it.unit === 'pcs' && it.pieces) return t('pack_pcs', { n: it.pieces });
+    if (typeof it.pack_g === 'number') return fmt(it.pack_g >= 1000 && it.pack_g % 100 === 0 ? it.pack_g / 1000 : it.pack_g, it.pack_g >= 1000 && it.pack_g % 100 === 0 ? (it.pack_g % 1000 ? 1 : 0) : 0) + ' ' + (it.pack_g >= 1000 && it.pack_g % 100 === 0 ? (it.unit === 'ml' ? 'l' : 'kg') : (it.unit === 'ml' ? 'ml' : 'g'));
+    return '';
+  }
+  function signed(n, d, unit) { var v = fmt(Math.abs(n), d) + unit; return n < 0 ? t('diff_less', { v: v }) : '+' + v; }
+  function saleText(it) {
+    if (typeof it.sale_pct !== 'number' || !(it.sale_pct > 0)) return '';
+    var head = typeof it.regular_price === 'number' ? t('sale_line', { pct: fmt(it.sale_pct), reg: czk(it.regular_price) }) : t('sale_line_short', { pct: fmt(it.sale_pct) });
+    return head + ' ' + (it.sale_until ? t('sale_until', { d: fmtDate(it.sale_until) }) : t('sale_until_unknown'));
+  }
+  /* The shopping list of one option (2026-11-08): open, one row per product, with what to search in that shop, pack, packs,
+     price, the sale as the shop gave it, a link, and the backup for the same food. Old results without these fields show
+     what they have. Plain text for "Copy shopping list" comes from listText(). */
+  function shoppingList(o) {
+    var items = (o.items || []).filter(function (it) { return it && typeof it === 'object'; });
+    if (!items.length) return '';
+    var dish = o.kind === 'order' || o.kind === 'eatout';
+    var rows = items.map(function (it) {
+      var url = safeUrl(it.url), name = h(it.search || it.name);
+      var mixed = it.shop && o.shop && String(o.shop).indexOf('+') >= 0;
+      var head = '<span class="sl-qty">' + h(it.packs ? it.packs + ' ×' : '') + '</span> <span class="sl-name">' + (url ? '<a href="' + h(url) + '" target="_blank" rel="noopener">' + name + '</a>' : name) + '</span>' + (mixed ? ' · ' + h(it.shop) : '');
+      var facts = [];
+      var pk = packText(it); if (pk) facts.push(pk);
+      if (typeof it.price === 'number') facts.push(t('per_pack', { p: czk(it.price) }));
+      if (typeof it.cost === 'number') facts.push(t('line_total', { c: czk(it.cost) }) + (typeof it.cost_with_card === 'number' && it.card ? ' (' + t('with_card', { c: czk(it.cost_with_card), card: cardName(it.card) }) + ')' : ''));
+      var nut = dish && typeof it.protein_g === 'number' && typeof it.kcal === 'number' && it.packs_per_day ?
+        h(t('dish_nutrition', { p: fmt(it.protein_g / it.packs_per_day, 1), k: fmt(it.kcal / it.packs_per_day), l: tk('label_', it.nutrition_label, 'estimate') })) : '';
+      var sale = saleText(it), out = '<li class="sl-row"' + (it.basis ? ' title="' + h(it.basis) + '"' : '') + '><div>' + head + '</div>' +
+        (facts.length ? '<div class="sl-facts">' + h(facts.join(' · ')) + '</div>' : '') + (nut ? '<div class="sl-facts">' + nut + '</div>' : '') +
+        (sale ? '<div class="sl-sale">' + h(sale) + '</div>' : '');
+      (Array.isArray(it.sold_out_instead) ? it.sold_out_instead : []).forEach(function (x) { if (x && x.name) out += '<div class="sl-note">' + h(t('sold_out_first', { name: x.name })) + '</div>'; });
+      var b = it.backup;
+      if (b && typeof b === 'object' && b.name) {
+        var bu = safeUrl(b.url), bn = h(b.search || b.name), bits = [];
+        if (b.packs) bits.push(b.packs + ' × ' + (packText(b) || ''));
+        if (typeof b.cost_diff === 'number') bits.push(signed(b.cost_diff, 2, ' CZK'));
+        if (typeof b.protein_diff_g === 'number') bits.push(signed(b.protein_diff_g, 1, ' g ' + t('protein_word')));
+        var bs = saleText(b);
+        out += '<div class="sl-backup"><strong>' + h(t('backup_if_out')) + '</strong> ' + (bu ? '<a href="' + h(bu) + '" target="_blank" rel="noopener">' + bn + '</a>' : bn) +
+          (bits.length ? ' · ' + h(bits.join(' · ')) : '') + (bs ? ' · ' + h(bs) : '') + '</div>';
+      } else if (b === null && !dish) out += '<div class="sl-note">' + h(t('backup_none')) + '</div>';
+      return out + '</li>';
+    }).join('');
+    var tot = items.reduce(function (a, it) { return a + (typeof it.cost === 'number' ? it.cost : 0); }, 0);
+    return '<section class="slist" id="list-' + h(o.id) + '" aria-label="' + h(t('shopping_list')) + '"><h5>' + h(t(dish ? 'dish_list' : 'shopping_list')) + ' · ' + h(tp('n_items', items.length)) + ' · ' + czk(tot) + '</h5><ul>' + rows + '</ul></section>';
+  }
+  function listText(o, r) {
+    var L = [t('shopping_list') + ': ' + o.label + ' (' + tp('n_days', o.days || r.days || 1) + ')'];
+    (o.items || []).forEach(function (it) {
+      var line = '- ' + (it.packs ? it.packs + ' × ' : '') + (it.search || it.name);
+      var pk = packText(it); if (pk) line += ' (' + pk + ')';
+      if (typeof it.cost === 'number') line += ', ' + czk(it.cost);
+      var sale = saleText(it); if (sale) line += '. ' + sale;
+      if (safeUrl(it.url)) line += '\n  ' + safeUrl(it.url);
+      var b = it.backup;
+      if (b && b.name) line += '\n  ' + t('backup_if_out') + ' ' + (b.search || b.name) + (b.packs ? ', ' + b.packs + ' × ' + (packText(b) || '') : '') +
+        (typeof b.cost_diff === 'number' ? ', ' + signed(b.cost_diff, 2, ' CZK') : '') + (typeof b.protein_diff_g === 'number' ? ', ' + signed(b.protein_diff_g, 1, ' g ' + t('protein_word')) : '') +
+        (safeUrl(b.url) ? '\n  ' + safeUrl(b.url) : '');
+      L.push(line);
+    });
+    var tot = (o.items || []).reduce(function (a, it) { return a + (typeof it.cost === 'number' ? it.cost : 0); }, 0);
+    L.push(t('list_total', { c: czk(tot) }));
+    if (o.cart && o.cart.filled === true) L.push(t('cart_filled_line'));
+    return L.join('\n');
+  }
+  function copyText(text) {
+    var done = function () { showToast(t('list_copied')); };
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    fallbackCopy(text); done();
+  }
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e) { /* the text stays selectable */ } ta.remove();
   }
   function optionCard(o, x, r, stale) {
     var old = o.price_seen && daysSince(o.price_seen) > stale, days = o.days || 1;
@@ -688,20 +790,17 @@
     var out = '<p class="gist"><strong>' + h(o.label) + '</strong></p><p class="big">' + czk(x.cost_per_day) + ' <small>' + h(t('per_day_short')) + '</small></p>' +
       '<p class="muted">' + h(t('cost_lines', { mine: czk(x.cost_mine), reg: czk(x.cost_regular), all: czk(x.cost_all_cards), d: tp('n_days', days) })) + (saved ? ' ' + h(t('card_saves', { s: czk(x.cost_regular - x.cost_mine) })) : '') + '</p>' +
       '<ul class="facts-s"><li>' + h(t('protein_kcal_day', { p: fmt(o.protein_g_per_day), k: fmt(o.kcal_per_day) })) + ' (' + h(tk('label_', o.nutrition_label, 'estimate')) + ')</li>' +
-      '<li>' + h(t('minutes_day', { n: fmt(o.minutes_per_day) })) + ' · ' + distHtml(o) + '</li>' +
-      (o.delivery_fee !== undefined && o.delivery_fee !== null ? '<li>' + h(t('delivery_fee_min', { f: czk(o.delivery_fee), m: o.min_order ? czk(o.min_order) : '–' })) + '</li>' : '') +
+      '<li>' + h(t('minutes_day', { n: fmtK(o.minutes_per_day) })) + (distHtml(o) ? ' · ' + distHtml(o) : '') + '</li>' +
+      (o.delivery_fee !== undefined && o.delivery_fee !== null ? '<li>' + h(t('delivery_fee_min', { f: czk(o.delivery_fee), m: o.min_order ? czk(o.min_order) : t('not_known') })) + '</li>' : '') +
       '<li' + (old ? ' class="stale"' : '') + '>' + h(o.price_seen ? t('price_seen', { d: fmtDate(o.price_seen) }) : t('price_seen_unknown')) + (old ? ' · ' + h(t('stale_note', { n: stale })) : '') + '</li>' +
-      (o.cart && o.cart.filled === true && typeof o.cart.cart_total_ours === 'number' ? '<li><strong>' + h(t('cart_filled_sum', { t: czk(o.cart.cart_total_ours) })) + '</strong></li>' : '') + '</ul>' + flagsHtml(x.flags) +
+      (o.cart && o.cart.filled === true && typeof o.cart.cart_total_ours === 'number' ? '<li><strong>' + h(t('cart_filled_sum', { t: czk(o.cart.cart_total_ours) })) + '</strong> ' + h(t('cart_filled_line')) + '</li>' : '') + '</ul>' + flagsHtml(x.flags) +
+      shoppingList(o) +
       (typeof o.notes === 'string' && o.notes.trim() ? '<p class="muted"><small>' + h(t('opt_notes')) + ': ' + h(o.notes) + '</small></p>' : '') +
-      ((o.items && o.items.length) || (o.recipes && o.recipes.length) ? '<details><summary>' + h(t('what_inside')) + '</summary>' +
-        (o.items || []).map(function (it) {
-          var nut = (o.kind === 'order' || o.kind === 'eatout') && typeof it.protein_g === 'number' && typeof it.kcal === 'number' && it.packs_per_day ?
-            ' · ' + h(t('dish_nutrition', { p: fmt(it.protein_g / it.packs_per_day, 1), k: fmt(it.kcal / it.packs_per_day), l: tk('label_', it.nutrition_label, 'estimate') })) : '';
-          var name = safeUrl(it.url) && (o.kind === 'order' || o.kind === 'eatout') ? '<a href="' + h(safeUrl(it.url)) + '" target="_blank" rel="noopener">' + h(it.name) + '</a>' : h(it.name);
-          return '<div' + (it.basis ? ' title="' + h(it.basis) + '"' : '') + '>' + h(it.packs ? it.packs + ' × ' : '') + name + (it.shop && o.shop && String(o.shop).indexOf('+') >= 0 ? ' · ' + h(it.shop) : '') + (it.cost ? ' · ' + czk(it.cost) : '') + nut + '</div>'; }).join('') +
+      ((o.recipes && o.recipes.length) ? '<details><summary>' + h(t('recipes_n', { n: o.recipes.length })) + '</summary>' +
         (o.recipes || []).map(function (rc) { return '<p><strong>' + h(rc.name) + '</strong>' + (rc.minutes ? ' · ' + h(t('minutes_n', { n: rc.minutes })) : '') + (rc.steps ? '<br>' + h(rc.steps) : '') + '</p>'; }).join('') + '</details>' : '') +
       '<div class="row"><button type="button" class="primary" data-act="pick" data-req="' + h(r.id) + '" data-opt="' + h(o.id) + '">' + h(t('pick_this')) + '</button>' +
-      (o.cart && safeUrl(o.cart.url) ? '<a class="btn" href="' + h(safeUrl(o.cart.url)) + '" target="_blank" rel="noopener">' + h(t(o.cart.filled ? 'open_cart' : 'open_shop')) + '</a>' : '') +
+      ((o.items || []).length ? '<button type="button" data-act="copy-list" data-req="' + h(r.id) + '" data-opt="' + h(o.id) + '">' + h(t('copy_list')) + '</button>' : '') +
+      (o.cart && safeUrl(o.cart.url) ? '<a class="btn' + (o.cart.filled ? ' cartbtn' : '') + '" href="' + h(safeUrl(o.cart.url)) + '" target="_blank" rel="noopener">' + h(t(o.cart.filled ? 'open_cart_pay' : 'open_shop')) + '</a>' : '') +
       (safeUrl(o.route_url) ? '<a class="btn" href="' + h(safeUrl(o.route_url)) + '" target="_blank" rel="noopener">' + h(t('open_route')) + '</a>' : '') + '</div>';
     return out;
   }
@@ -734,7 +833,17 @@
     var pid = St.nextCode(u.history, 'plans', 'P');
     var c = St.commit(u.profile.id, 'plan_picked', [{ file: 'history', path: 'plans#' + pid, value: { id: pid, request_id: reqId, option_id: optId, label: o.label, kind: o.kind || null,
       shop: o.shop || null, days: o.days || r.days, start_date: r.start_date, cost_per_day: x.cost_per_day, cost_total: x.cost_mine, picked_at: St.nowIso() } }]);
-    showToast(t('picked', { label: o.label }), c ? c.id + '|' + u.profile.id : null);
+    showToast(t('picked_list', { label: o.label }), c ? c.id + '|' + u.profile.id : null);
+    var cartUrl = o.cart && o.cart.filled === true ? safeUrl(o.cart.url) : null;
+    var fl = h(t('picked_list', { label: o.label })) + ' <button type="button" data-act="copy-list" data-req="' + h(reqId) + '" data-opt="' + h(optId) + '">' + h(t('copy_list')) + '</button>' +
+      (cartUrl ? ' <a class="btn cartbtn" href="' + h(cartUrl) + '" target="_blank" rel="noopener">' + h(t('open_cart_pay')) + '</a>' : '');
+    go('request', reqId, { flash: fl, keepBack: true, focus: 'list-' + optId });
+    var od = document.getElementById('other-' + optId); if (od) { od.open = true; var li = document.getElementById('list-' + optId); if (li) li.scrollIntoView({ block: 'center' }); }
+  }
+  function copyList(reqId, optId) {
+    var r = S().requests[reqId], res = S().results[reqId];
+    var o = res && (res.options || []).filter(function (x) { return x.id === optId; })[0];
+    if (r && o) copyText(listText(o, r));
   }
 
   // =========================================================
@@ -1045,6 +1154,7 @@
         saveDrafts(); go('plan'); break;
       }
       case 'pick': pickOption(el.dataset.req, el.dataset.opt); break;
+      case 'copy-list': copyList(el.dataset.req, el.dataset.opt); break;
       case 'add-weighin': {
         var hv = drafts['history:' + u.profile.id].values, kg = num(hv.w_kg);
         var we = []; if (!hv.w_date || hv.w_date > St.today()) we.push(t('f_date')); if (kg === null || kg < 30 || kg > 300) we.push(t('f_kg') + ' ' + rng(30, 300));

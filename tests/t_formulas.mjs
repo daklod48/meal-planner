@@ -43,5 +43,21 @@ const hand = [
 hand.forEach(([pr, kg, d, kcal, prot], i) => { const x = P.targets(pr, kg, d); if (x.kcal !== kcal || x.protein_g !== prot) { bad++; console.log('DRI hand check', i, 'expected', kcal, prot, 'got', x.kcal, x.protein_g); } });
 // No fixed protein minimum: an adult with no own g/kg gets the DRI 0.8 g/kg, not 1.6.
 if (P.targets(hand[0][0], 68.4, '2026-10-19').protein_g_per_kg !== 0.8) { bad++; console.log('adult default protein is not the DRI 0.8 g/kg'); }
+// 2026-11-08 (planner 1.3) hand checks; each fails on planner 1.2 (no such functions, or no energy top-up).
+const pick = fn => cases.filter(c => c.fn === fn);
+if (typeof P.alternatives !== 'function') { bad++; console.log('no alternatives() in planner.js'); } else {
+  // tvaroh A is the best value but sold out: the plan uses B, the backup is C, and A is named as skipped
+  const al = P.alternatives(...pick('alternatives')[0].args);
+  if (al.backup !== 'tesco-tv-c' || JSON.stringify(al.sold_out_above) !== '["tesco-tv-a"]' || al.ranked[0] !== 'tesco-tv-a') { bad++; console.log('sold-out best: expected backup C and A skipped, got', al); }
+  // backup C for a line of 4 x B (110 g protein, 71.60 CZK): 2 packs of 500 g = 130 g protein, 99.80 CZK -> +28.20 CZK, +20 g protein
+  const bl = P.backupLine(...pick('backupLine')[0].args);
+  if (bl.packs !== 2 || bl.cost_diff !== 28.2 || bl.protein_diff_g !== 20) { bad++; console.log('backup line expected 2 packs, +28.2 CZK, +20 g, got', bl); }
+  // sale: 29.90 -> 17.90 is 40 % off until 9/11; on 10/11 it has ended; no end date = active not known
+  const si = P.saleInfo(pick('saleInfo')[0].args[0], '2026-11-08'), sj = P.saleInfo(pick('saleInfo')[0].args[0], '2026-11-10'), sk = P.saleInfo(Object.assign({}, pick('saleInfo')[0].args[0], { sale_until: null }), '2026-11-08');
+  if (si.sale_pct !== 40 || si.active !== true || sj.active !== false || sk.active !== null || sk.sale_until !== null) { bad++; console.log('sale info wrong', si, sj, sk); }
+}
+// energy top-up: DRI protein (412 g) next to 24,812 kcal for 7 days; planner 1.2 stopped near 60 % of the energy
+const et = P.basket(...pick('basket').slice(-1)[0].args);
+if (!(et.kcal >= 0.95 * 24812) || et.energy_topup !== true) { bad++; console.log('energy top-up: expected at least 95 % of 24,812 kcal, got', et.kcal, et.energy_topup); }
 console.log(bad ? 'FAIL ' + bad : 'PASS ' + cases.length + ' cases equal in JS and Python; hand checks ok');
 process.exit(bad ? 1 : 0);

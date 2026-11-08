@@ -131,7 +131,12 @@ ok('options: vegetables first, 200 g a day (4 x 350 g for 7 days)', veg and veg[
 ok('options: Košík under its 749 CZK minimum is said', 'Below the 749 CZK minimum' in kos['notes'], kos['notes'])
 mx = [o for o in doc['options'] if o['kind'] == 'cook-mixed']
 ok('options: mixed = promo walk + rest at the Tesco store, both walks counted', mx and all('Tesco Expres' in o['label'] and 'Two walks' in o['notes'] for o in mx), [o['label'] for o in mx])
-ok('options: one product never above 40 % of protein (except forced vegetables)', all(i['protein_g'] <= 0.4 * 840 + 70 for o in doc['options'] for i in o['items']))
+# 2026-11-08 (planner 1.3, energy top-up): the 40 % rule now reads "never above 40 % of the protein while protein is short;
+# once protein is covered and energy is still short (energy_topup), an energy food may go up to 40 % of the energy instead".
+# Before: every product <= 40 % of protein, always (that left the DRI demo at 1,445 of 3,545 kcal a day).
+ok('options: one product never above 40 % of protein, or, after the energy top-up, never above 40 % of energy (except forced vegetables)',
+   all(i['protein_g'] <= 0.4 * 840 + 70 or (o.get('energy_topup') and i['kcal'] <= 0.4 * 20300 + 1800) for o in doc['options'] for i in o['items'] if i.get('category') != 'zelenina'),
+   [(o['id'], i['name'][:30], i['protein_g'], i['kcal'], o.get('energy_topup')) for o in doc['options'] for i in o['items'] if i['protein_g'] > 0.4 * 840 + 70])
 ok('options: in-person options name their stores (for the closed check)', all(o.get('stores') and all(x.get('id') for x in o['stores']) for o in doc['options'] if o['kind'] != 'cook-online') and all(len(o['stores']) == 2 for o in mx))
 ok('options: the run never needs to read a price: items carry product ids for the cart', all(i.get('product_id') for i in O['O1']['items']))
 

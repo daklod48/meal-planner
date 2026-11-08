@@ -11,6 +11,7 @@ run t_foods.py python3 tests/t_foods.py
 run t_cook.py python3 tests/t_cook.py
 run t_dine.py python3 tests/t_dine.py
 run t_watch.py python3 tests/t_watch.py
+run t_list.py python3 tests/t_list.py
 run t_app.mjs node tests/t_app.mjs
 run t_shops.mjs node tests/t_shops.mjs
 run t_web.mjs node tests/t_web.mjs

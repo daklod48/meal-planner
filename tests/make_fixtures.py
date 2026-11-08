@@ -91,6 +91,58 @@ cases.append({'fn': 'targets', 'args': [{'body': body('m', '1996-04-04', 180), '
 cases.append({'fn': 'targets', 'args': [{'body': body('m', '2010-04-04', 170), 'goal': {'type': 'gain', 'gain_kg': 2, 'weeks': 10}}, 58, '2026-11-05']})
 cases.append({'fn': 'targets', 'args': [{'body': body('f', '1996-04-04', 165, life_stage='lactating', lactation_period='0-6'), 'goal': {'type': 'typed', 'typed_protein_g': 60, 'typed_kcal': 2400}}, 62, '2026-11-05']})
 cases.append({'fn': 'targets', 'args': [{'body': body('f', '1996-04-04', 165, life_stage='other'), 'goal': {'type': 'maintain'}}, 62, '2026-11-05']})
+# 2026-11-08 (planner 1.3): the shopping list. Appended AFTER every earlier case, so the first 454 cases are unchanged.
+# Hand case: four tvaroh products in one shop; the best value is sold out, so the plan uses the second and the third is the backup.
+tv = [
+    {'id': 'tesco-tv-a', 'name': 'Tvaroh A 250 g', 'price': 15.9, 'pack_g': 250, 'per100g': {'protein': 12, 'kcal': 64}, 'in_stock': False},
+    {'id': 'tesco-tv-b', 'name': 'Tvaroh B 250 g', 'price': 17.9, 'pack_g': 250, 'per100g': {'protein': 11, 'kcal': 63}, 'in_stock': True,
+     'regular_price': 29.9, 'sale_until': '2026-11-09'},
+    {'id': 'tesco-tv-c', 'name': 'Tvaroh C 500 g', 'price': 49.9, 'pack_g': 500, 'per100g': {'protein': 13, 'kcal': 70}, 'in_stock': True},
+    {'id': 'tesco-tv-d', 'name': 'Tvaroh D 250 g', 'price': 39.9, 'pack_g': 250, 'per100g': {'protein': 11, 'kcal': 63}},
+]
+need7 = {'protein_g': 412.2, 'kcal': 24812}
+cases.append({'fn': 'rankProducts', 'args': [tv, need7, []]})
+cases.append({'fn': 'alternatives', 'args': [tv, 'tesco-tv-b', need7, []]})
+cases.append({'fn': 'alternatives', 'args': [tv, 'tesco-tv-d', need7, []]})
+cases.append({'fn': 'alternatives', 'args': [tv[:1], 'tesco-tv-a', need7, []]})
+cases.append({'fn': 'backupLine', 'args': [{'packs': 4, 'cost': 71.6, 'protein_g': 110, 'kcal': 630}, tv[2], []]})
+cases.append({'fn': 'backupLine', 'args': [{'packs': 2, 'cost': 30, 'protein_g': 0, 'kcal': 900}, {'id': 'x-oil', 'price': 60, 'pack_g': 1000, 'per100g': {'protein': 0, 'kcal': 884}}, []]})
+cases.append({'fn': 'backupLine', 'args': [{'packs': 1, 'cost': 10}, billa, ['billa-club']]})
+for d in ('2026-11-08', '2026-11-09', '2026-11-10', None):
+    cases.append({'fn': 'saleInfo', 'args': [tv[1], d]})
+cases.append({'fn': 'saleInfo', 'args': [dict(tv[1], sale_until=None), '2026-11-08']})
+cases.append({'fn': 'saleInfo', 'args': [dict(tv[1], sale_until='9. 11.'), '2026-11-08']})
+cases.append({'fn': 'saleInfo', 'args': [tv[0], '2026-11-08']})
+cases.append({'fn': 'saleInfo', 'args': [dict(tv[1], regular_price=17.9), '2026-11-08']})
+cases.append({'fn': 'saleInfo', 'args': [dict(tv[1], regular_price='31.5', price='17.9'), '2026-11-08']})
+# energy top-up: DRI protein next to a high energy need (the demo shape): oats and rice must reach the energy target
+cases.append({'fn': 'basket', 'args': [[
+    {'id': 'tesco-oats', 'name': 'Oats', 'price': 11.9, 'pack_g': 500, 'per100g': {'protein': 13, 'kcal': 371}},
+    {'id': 'tesco-rice', 'name': 'Rice', 'price': 29.9, 'pack_g': 1000, 'per100g': {'protein': 7, 'kcal': 350}},
+    {'id': 'tesco-lentils', 'name': 'Lentils', 'price': 29.9, 'pack_g': 500, 'per100g': {'protein': 24, 'kcal': 345}},
+    {'id': 'tesco-tvaroh', 'name': 'Tvaroh', 'price': 17.9, 'pack_g': 250, 'per100g': {'protein': 11, 'kcal': 63}}], need7, [], {'max_share': 0.4}]})
+rnd2 = random.Random(20261108)
+for n in range(60):
+    k = rnd2.randint(1, 6)
+    group = []
+    for i in range(k):
+        f = {'id': 'shop-p%02d' % i, 'name': 'product %d' % i, 'price': round(rnd2.uniform(8, 160), 2), 'pack_g': rnd2.choice([100, 200, 250, 400, 500, 1000]),
+             'per100g': {'protein': round(rnd2.uniform(0, 30), 1), 'kcal': round(rnd2.uniform(20, 500), 0)}}
+        if rnd2.random() < 0.3:
+            f['in_stock'] = False
+        if rnd2.random() < 0.3:
+            f['loyalty'] = [{'card': 'billa-club', 'price': round(f['price'] * rnd2.uniform(0.6, 0.95), 2)}]
+        if rnd2.random() < 0.4:
+            f['regular_price'] = round(f['price'] * rnd2.uniform(1.0, 2.2), 2)
+            f['sale_until'] = rnd2.choice([None, '2026-11-0%d' % rnd2.randint(5, 9)])
+        group.append(f)
+    nd = {'protein_g': round(rnd2.uniform(50, 1200), 1), 'kcal': round(rnd2.uniform(1500, 30000), 0)}
+    cards2 = rnd2.choice([[], ['billa-club']])
+    cases.append({'fn': 'rankProducts', 'args': [group, nd, cards2]})
+    cases.append({'fn': 'alternatives', 'args': [group, rnd2.choice(group)['id'], nd, cards2]})
+    line = {'packs': rnd2.randint(1, 6), 'cost': round(rnd2.uniform(10, 400), 2), 'protein_g': round(rnd2.uniform(0, 300), 1), 'kcal': round(rnd2.uniform(0, 5000), 0)}
+    cases.append({'fn': 'backupLine', 'args': [line, rnd2.choice(group), cards2]})
+    cases.append({'fn': 'saleInfo', 'args': [rnd2.choice(group), rnd2.choice(['2026-11-06', '2026-11-08', None])]})
 p = os.path.join(os.path.dirname(__file__), 'fixtures', 'formulas.json')
 json.dump(cases, open(p, 'w'), ensure_ascii=False)
 print(len(cases), 'cases ->', p)

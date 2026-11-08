@@ -17,7 +17,7 @@ Use (from the MealPlanner folder):
   python3 tools/cook.py borrow <REQ-id>                        foods of this run without nutrition get the nutrition of the same kind
                                                                of food read at another shop (label estimate, source named)
   python3 tools/cook.py options <REQ-id> [--fresh-hours 48]    builds every option -> data/runs/<REQ-id>/options.json (prints a table)
-  python3 tools/cook.py cart <REQ-id> --option O1 --tsv <cart.tsv>
+  python3 tools/cook.py cart <REQ-id> --option O1 --tsv <cart.tsv> [--shop rohlik|kosik|tesco]
                                                                cart prices are the truth: rewrites that option's cost from the cart
   python3 tools/cook.py result <REQ-id> [--extras <extras.json>]
                                                                writes data/results/<REQ-id>.json and scores it (same as planner.py score-result)
@@ -197,6 +197,43 @@ PACK_RE = re.compile(r'(\d+(?:[.,]\d+)?)\s*(kg|g|ml|l|ks)\b', re.I)
 MULTI_RE = re.compile(r'(\d+)\s*[x×]\s*(\d+(?:[.,]\d+)?)\s*(kg|g|ml|l)\b', re.I)
 
 
+def sale_until_from(text, seen):
+    """The last day of a sale as YYYY-MM-DD, from what the shop or leaflet says, or None when it does not say (never guessed).
+    Understands: an ISO date; "do 9. 11." / "do 9.11.2026" / "platí do 09/11/2026" / "until 9/11"; kupi.cz's relative words
+    "dnes končí" (ends today), "zítra končí" (ends tomorrow), "končí za 3 dny" (ends in 3 days), counted from the day the
+    price was read (seen). A date without a year takes the year of the read, or the next year when it would be in the past."""
+    if not text:
+        return None
+    t = fold(str(text))
+    base = None
+    try:
+        base = datetime.fromisoformat(str(seen)).date() if seen and seen != 'now' else clock().date()
+    except Exception:
+        base = clock().date()
+    m = re.search(r'(\d{4})-(\d{2})-(\d{2})', t)
+    if m:
+        return '%s-%s-%s' % m.groups()
+    if 'dnes konci' in t:
+        return base.isoformat()
+    if 'zitra konci' in t:
+        return (base + timedelta(days=1)).isoformat()
+    m = re.search(r'konci za (\d+) dn', t)
+    if m:
+        return (base + timedelta(days=int(m.group(1)))).isoformat()
+    m = re.search(r'(?:do|until|plati do|platnost do)\s*(\d{1,2})\s*[./]\s*(\d{1,2})\s*[./]?\s*(\d{4})?', t)
+    if m:
+        d, mo = int(m.group(1)), int(m.group(2))
+        y = int(m.group(3)) if m.group(3) else base.year
+        try:
+            day = date(y, mo, d)
+        except ValueError:
+            return None
+        if not m.group(3) and day < base - timedelta(days=31):
+            day = date(y + 1, mo, d)
+        return day.isoformat()
+    return None
+
+
 def parse_pack(text):
     """'cca 500 g' -> (500, 'g', None); '10 ks' -> (None, 'pcs', 10); '4 x 125 g' -> (500, 'g', None)."""
     t = fold(text)
@@ -358,9 +395,9 @@ def cmd_terms(rid, skip):
                       'skip_sources': [k for k, v in fresh_out.items() if v['state'] == 'skip'],
                       'partial_sources': {k: partial_js[k] for k in partial_js},
                       'rohlik_terms': [s['term'] for s in out], 'rohlik_calls_needed': math.ceil(len(out) / 4),
-                      'kosik_js': 'await MPK(%s, 3)' % json.dumps([s['term'] for s in out], ensure_ascii=False),
-                      'tesco_js': 'await MPT(%s, 3)' % json.dumps(tesco_terms, ensure_ascii=False),
-                      'kupi_js': 'await MPL(%s, 3, %s)' % (json.dumps([s['kupi'] for s in out], ensure_ascii=False), json.dumps(chains))}, ensure_ascii=False, indent=1))
+                      'kosik_js': 'await MPK(%s, 5)' % json.dumps([s['term'] for s in out], ensure_ascii=False),
+                      'tesco_js': 'await MPT(%s, 5)' % json.dumps(tesco_terms, ensure_ascii=False),
+                      'kupi_js': 'await MPL(%s, 5, %s)' % (json.dumps([s['kupi'] for s in out], ensure_ascii=False), json.dumps(chains))}, ensure_ascii=False, indent=1))
     return 0
 
 
@@ -421,6 +458,11 @@ def make_item(src, row, s, seen, egg_g):
         op = numf(row.get('original_price'))
         if op and it['price'] and op > it['price']:
             notes.append('sale: was %.2f CZK' % op)
+            # planner 1.3: the regular price and, when the connector gives it (TSV column sale_until), the last sale day
+            # sale_text "-10 % pro vás" = the reading account's own new-customer price (no end date), not a shop-wide promotion
+            st = (row.get('sale_text') or '').strip()
+            it.update(regular_price=op, sale_until=sale_until_from(row.get('sale_until'), seen),
+                      sale_source='Rohlík connector' + (': "%s" (the reading account\'s own price)' % st if 'pro vas' in fold(st) else (': "%s"' % st if st else ' (prices.saleValidTill)')))
     elif src == 'kosik':
         it.update(id='kosik-%s' % row['id'], shop='kosik', shop_product_id=str(row['id']), name=name,
                   price=numf(row.get('price')), url=('https://www.kosik.cz/' + row['slug']) if row.get('slug') else None)
@@ -433,6 +475,7 @@ def make_item(src, row, s, seen, egg_g):
         rec = numf(row.get('recommended'))
         if rec and it['price'] and rec > it['price']:
             notes.append('sale: was %.2f CZK' % rec)
+            it.update(regular_price=rec, sale_until=sale_until_from(row.get('sale_until'), seen), sale_source='Košík page data (recommended price)')
     elif src == 'tesco':
         it.update(id='tesco-%s' % row['id'], shop='tesco', shop_product_id=str(row['id']), name=name,
                   price=numf(row.get('price')), url='https://nakup.itesco.cz/shop/cs-CZ/products/%s' % row['id'])
@@ -449,6 +492,11 @@ def make_item(src, row, s, seen, egg_g):
                 it['loyalty'] = [{'card': 'tesco-clubcard', 'price': numf(m.group(1))}]
         if promo:
             notes.append('promo: %s' % promo[:80])
+            wp = numf(row.get('was_price'))
+            if wp and it['price'] and wp > it['price']:
+                it['regular_price'] = wp
+            if wp or it.get('loyalty'):
+                it.update(sale_until=sale_until_from(row.get('sale_until') or promo, seen), sale_source='Tesco page promotion: %s' % promo[:60])
     elif src == 'kupi':
         shop_name = fold(row.get('chain'))
         chain = card = None
@@ -466,7 +514,7 @@ def make_item(src, row, s, seen, egg_g):
         if is_card and not card:
             return None, 'members-only price at %s, no card key for it in the app: skipped' % row.get('chain')
         kslug = slug(row.get('slug') or name)
-        it.update(id='%s-kupi-%s' % (chain, kslug), shop=chain, name='%s (%s leaflet via kupi.cz)' % (name, row.get('chain')),
+        it.update(id='%s-kupi-%s' % (chain, kslug), shop=chain, name='%s (%s leaflet via kupi.cz)' % (name, row.get('chain')), search_name=name,
                   price_label='leaflet', url=('https://www.kupi.cz/sleva/' + row['slug']) if row.get('slug') else None)
         if is_card:
             if not reg or reg <= price:
@@ -476,6 +524,9 @@ def make_item(src, row, s, seen, egg_g):
             notes.append('card price %.2f with %s; regular = kupi "Běžná cena"' % (price, card))
         else:
             it['price'] = price
+            if reg and price and reg > price:
+                it['regular_price'] = reg
+        it.update(sale_until=sale_until_from(row.get('valid'), seen), sale_source='kupi.cz leaflet: "%s"' % (row.get('valid') or 'no date'))
         notes.append('leaflet valid: %s' % (row.get('valid') or '?'))
     else:
         raise SystemExit('unknown source %s' % src)
@@ -634,7 +685,52 @@ def forced_veg(fl, cards, days):
             'protein_g': planner.r(packs * g * planner.num(n['protein']) / 100, 2), 'kcal': planner.r(packs * g * planner.num(n['kcal']) / 100, 2)}
 
 
-def build_option(oid, label, kind, shopname, fl, need, cards, days, extra):
+def list_line(x, f, alts, need, cards, today):
+    """planner 1.3 (2026-11-08): one row of the shopping list. The product to search (its exact name in that shop), pack
+    size, packs, price, the sale as the shop gave it (regular price, % off, last day or null), and a BACKUP: the best other
+    product of the same food in the same shop that is in stock, with what it costs and gives more or less (planner
+    alternatives() and backup_line(), JS twins in app/js/planner.js). Sold-out products that ranked better are named."""
+    # same shop, same food, and bought the same way: a leaflet price (in the store) never backs up an online product, nor the reverse
+    leaf = f.get('price_label') == 'leaflet'
+    cands = [g for g in alts if g.get('shop') == f.get('shop') and g.get('category') == f.get('category') and (g.get('price_label') == 'leaflet') == leaf]
+    if not any(g['id'] == f['id'] for g in cands):
+        cands.append(f)
+    al = planner.alternatives(cands, f['id'], need, cards)
+    byid = {g['id']: g for g in cands}
+    si = planner.sale_info(f, today)
+    line = {'search': f.get('search_name') or f['name'], 'pack_g': f.get('pack_g'), 'unit': f.get('unit'), 'pieces': f.get('pieces'),
+            'price': f.get('price'), 'in_stock': f.get('in_stock'),
+            'regular_price': si['regular_price'] if si else None, 'sale_pct': si['sale_pct'] if si else None,
+            'sale_until': si['sale_until'] if si else None, 'sale_source': f.get('sale_source') if si else None,
+            'sold_out_instead': [{'id': i, 'name': byid[i].get('search_name') or byid[i]['name']} for i in al['sold_out_above']], 'backup': None}
+    if al['backup']:
+        b = byid[al['backup']]
+        bl = planner.backup_line({'packs': x['packs'], 'cost': x['cost'], 'protein_g': x['protein_g'], 'kcal': x['kcal']}, b, cards)
+        bsi = planner.sale_info(b, today)
+        line['backup'] = {'id': b['id'], 'name': b['name'], 'search': b.get('search_name') or b['name'], 'url': b.get('url'), 'pack_g': b.get('pack_g'),
+                          'unit': b.get('unit'), 'price': b.get('price'), 'packs': bl['packs'], 'cost': bl['cost'], 'cost_diff': bl['cost_diff'],
+                          'protein_diff_g': bl['protein_diff_g'], 'regular_price': bsi['regular_price'] if bsi else None,
+                          'sale_pct': bsi['sale_pct'] if bsi else None, 'sale_until': bsi['sale_until'] if bsi else None}
+    return line
+
+
+def best_per_food(fl, need, cards):
+    """2026-11-08: one product per food per shop (and per way of buying: online or leaflet): the best-ranked one in stock
+    (planner.rank_products, the basket's own value). The runner-up becomes that line's backup (list_line), so a list says
+    "search X; if it is out, Y" instead of three brands of oats."""
+    groups = {}
+    for f in fl:
+        groups.setdefault((f.get('shop'), f.get('category'), f.get('price_label') == 'leaflet'), []).append(f)
+    out = []
+    for k in sorted(groups, key=lambda x: (str(x[0]), str(x[1]), x[2])):
+        ranked = [x for x in planner.rank_products(groups[k], need, cards) if x['in_stock']]
+        if ranked:
+            out.append(next(f for f in groups[k] if f['id'] == ranked[0]['id']))
+    return out
+
+
+def build_option(oid, label, kind, shopname, fl, need, cards, days, extra, alts=None):
+    fl = best_per_food(fl, need, cards)
     fv = forced_veg(fl, cards, days)
     rest = dict(need)
     if fv:
@@ -656,29 +752,43 @@ def build_option(oid, label, kind, shopname, fl, need, cards, days, extra):
         seens.append(f.get('seen'))
         if x.get('card_used'):
             sav[x['card_used']] = sav.get(x['card_used'], 0) + (x['cost_regular'] - x['cost'])
-        items.append({'id': x['id'], 'shop': f['shop'], 'category': f.get('category'), 'name': f['name'], 'packs': x['packs'], 'cost': x['cost_regular'],
-                      'cost_with_card': x['cost'] if x.get('card_used') else None, 'card': x.get('card_used'),
-                      'protein_g': x['protein_g'], 'kcal': x['kcal'], 'url': f.get('url'), 'product_id': f.get('shop_product_id'),
-                      'price_label': f.get('price_label'), 'nutrition_label': f.get('nutrition_label')})
+        it = {'id': x['id'], 'shop': f['shop'], 'category': f.get('category'), 'name': f['name'], 'packs': x['packs'], 'cost': x['cost_regular'],
+              'cost_with_card': x['cost'] if x.get('card_used') else None, 'card': x.get('card_used'),
+              'protein_g': x['protein_g'], 'kcal': x['kcal'], 'url': f.get('url'), 'product_id': f.get('shop_product_id'),
+              'price_label': f.get('price_label'), 'nutrition_label': f.get('nutrition_label')}
+        it.update(list_line(x, f, alts if alts is not None else fl, need, cards, clock().date().isoformat()))
+        items.append(it)
     o = {'id': oid, 'label': label, 'kind': kind, 'shop': shopname, 'days': days,
          'cost_regular': b['cost_regular'], 'card_savings': [{'card': k, 'saving': planner.r(v, 2)} for k, v in sorted(sav.items()) if v > 0],
          # eaten = what the plan feeds him (never more than the target); bought = whole packs; the rest stays as leftovers
          'protein_g_per_day': planner.r(min(b['protein_g'], need['protein_g']) / days, 1), 'kcal_per_day': planner.r(min(b['kcal'], need['kcal']) / days, 0),
          'bought_protein_g': planner.r(b['protein_g'], 1), 'bought_kcal': planner.r(b['kcal'], 0),
          'nutrition_label': worst_label(labels), 'price_seen': min(s for s in seens if s), 'price_label': 'mixed' if len(set(i['price_label'] for i in items)) > 1 else items[0]['price_label'],
-         'items': items, 'recipes': [], 'taste': 3, 'met': b['met'], 'notes': ''}
+         'items': items, 'recipes': [], 'taste': 3, 'met': b['met'], 'energy_topup': bool(b.get('energy_topup')), 'notes': ''}
     o.update(extra)
     if fv:
         o['notes'] += 'Vegetables: %d g a day included first (half of the WHO 400 g fruit and vegetables a day; fruit is not planned). ' % VEG_G_PER_DAY
     else:
         o['notes'] += 'No vegetables found at this shop in this run. '
-    if b['protein_g'] < 0.98 * need['protein_g'] or b['kcal'] < 0.98 * need['kcal']:
-        o['notes'] += 'These foods could not cover the whole target within the 40 %% per product rule (protein %s of %s g, kcal %s of %s). ' % (
-            planner.r(b['protein_g'], 0), need['protein_g'], planner.r(b['kcal'], 0), need['kcal'])
+    # notes in plain words (2026-11-08): what is short or left over, per day, never a raw sum like "protein 786.0 of 412.2 g"
+    short = []
+    if b['protein_g'] < 0.98 * need['protein_g']:
+        short.append('%d g protein a day of your %d g' % (int(planner.r(b['protein_g'] / days, 0)), int(planner.r(need['protein_g'] / days, 0))))
+    if b['kcal'] < 0.98 * need['kcal']:
+        short.append('%d kcal a day of your %d' % (int(planner.r(b['kcal'] / days, 0)), int(planner.r(need['kcal'] / days, 0))))
+    if short:
+        o['notes'] += 'Short of your target: this shop\'s foods give about %s (no single food may be more than 40 %% of the plan). ' % ' and '.join(short)
     lk, lp = b['kcal'] - need['kcal'], b['protein_g'] - need['protein_g']
-    if lk > 0.02 * need['kcal'] or lp > 0.02 * need['protein_g']:
-        o['notes'] += 'Whole packs: after %d days about %s kcal and %s g protein are left over for later meals (counted in the price, not in the daily numbers). ' % (
-            days, max(0, int(planner.r(lk, 0))), max(0, int(planner.r(lp, 0))))
+    left = []
+    if lk > 0.02 * need['kcal']:
+        left.append('about %d kcal' % int(planner.r(lk, 0)))
+    if lp > 0.02 * need['protein_g']:
+        left.append('about %d g protein' % int(planner.r(lp, 0)))
+    if left:
+        o['notes'] += 'Shops sell whole packs, so some food is left over after %d days (%s) for later meals; it is in the price, not in the daily numbers. ' % (
+            days, ' and '.join(left))
+    if b.get('energy_topup'):
+        o['notes'] += 'Energy foods were allowed up to 40 % of your energy each, so the plan reaches your calories. '
     return o
 
 
@@ -697,9 +807,9 @@ def cmd_options(rid, fresh_hours):
     cutoff = clock() - timedelta(hours=fresh_hours)
     sts, _ = request_staples(r, set())
     by_key = {s['key']: s for s in sts}
-    fl, dropped = [], []
+    fl, dropped, alts = [], [], []  # alts = every fresh product passing the name rules, sold-out ones too (shopping list comparison)
     for f in foods_all():
-        if f.get('category') not in by_key or not f.get('per100g') or f.get('in_stock') is False:
+        if f.get('category') not in by_key or not f.get('per100g'):
             continue
         why = name_refusal(by_key[f['category']], f['name'])  # today's name rules also apply to foods stored by older runs
         if why:
@@ -707,6 +817,9 @@ def cmd_options(rid, fresh_hours):
             continue
         ts = planner_parse_time(f.get('seen'))
         if f['id'] not in ids and (ts is None or ts < cutoff):
+            continue
+        alts.append(f)
+        if f.get('in_stock') is False:
             continue
         fl.append(f)
     by_shop = {}
@@ -731,13 +844,19 @@ def cmd_options(rid, fresh_hours):
         n += 1
         extra = {'delivery_fee': d.get('delivery_fee'), 'min_order': d.get('min_order'), 'distance_m': None,
                  'delivery_min': None, 'walk_min': None, 'transit_min': None, 'shop_min_per_day': 0}
-        o = build_option('O%d' % n, '%s delivered (cook at home)' % meta['name'], 'cook-online', key, by_shop[key], need, cards, days, extra)
+        # 2026-11-08: an online order holds online products only; a leaflet price of the same chain is for its store
+        online_pool = [f for f in by_shop[key] if f.get('price_label') != 'leaflet']
+        o = build_option('O%d' % n, '%s delivered (cook at home)' % meta['name'], 'cook-online', key, online_pool, need, cards, days, extra, alts)
         if not o:
             n -= 1
             continue
         if d.get('min_order') and o['cost_regular'] < d['min_order']:
-            o['notes'] += 'Below the %s CZK minimum order by %.2f CZK%s. ' % (
+            # 2026-11-08: the minimum is COUNTED, as dine.py does since the 19/10 review (you pay it, or top the order up with
+            # other shopping); before, a 192 CZK week below Rohlík's 749 CZK minimum won all three picks of the demo
+            o['notes'] += 'Below the %s CZK minimum order by %.2f CZK%s: counted as the minimum (you pay it, or add other shopping). ' % (
                 int(d['min_order']), d['min_order'] - o['cost_regular'], ' (a Rohlik Point box needs 500 CZK)' if key == 'rohlik' else '')
+            o['food_cost'] = o['cost_regular']
+            o['cost_regular'] = planner.r(d['min_order'], 2)
         if d.get('delivery_fee') is None:
             o['notes'] += 'Delivery fee: shown in the cart (not counted in the price). '
         o['cart'] = {'shop': key, 'url': meta['shop_url'], 'filled': False}
@@ -753,7 +872,7 @@ def cmd_options(rid, fresh_hours):
                      'delivery_fee': None, 'min_order': None, 'delivery_min': None, 'route_url': t_store.get('route_url'),
                      'shop_min_per_day': planner.r(2 * travel / days, 1),
                      'stores': [{'id': t_store['id'], 'name': t_store['name'], 'address': t_store.get('address')}]}
-            o = build_option('O%d' % n, 'Shop at %s (%s) and cook' % (t_store['name'], t_store.get('address', '')), 'cook-shop', 'tesco', by_shop['tesco'], need, cards, days, extra)
+            o = build_option('O%d' % n, 'Shop at %s (%s) and cook' % (t_store['name'], t_store.get('address', '')), 'cook-shop', 'tesco', by_shop['tesco'], need, cards, days, extra, alts)
             if o:
                 o['notes'] += 'Prices are Tesco online prices; the shelf price can differ. '
                 opts.append(o)
@@ -786,7 +905,7 @@ def cmd_options(rid, fresh_hours):
         else:
             rest = ' + %s order' % ONLINE[base['shop']]['name']
         lab = '%s promotions at %s%s' % (chain.capitalize(), store['name'], rest)
-        o = build_option('M', lab, 'cook-mixed' if base else 'cook-shop', chain + ('+' + base['shop'] if base else ''), pool, need, cards, days, extra)
+        o = build_option('M', lab, 'cook-mixed' if base else 'cook-shop', chain + ('+' + base['shop'] if base else ''), pool, need, cards, days, extra, alts)
         if not o or not any(i['shop'] == chain for i in o['items']):
             continue
         part = sum(i['cost'] for i in o['items'] if base and i['shop'] == base['shop'])
@@ -813,7 +932,9 @@ def cmd_options(rid, fresh_hours):
     return 0
 
 
-def cmd_cart(rid, oid, tsv):
+def cmd_cart(rid, oid, tsv, shop='rohlik'):
+    """Compares the basket Claude filled at one shop (rohlik by default; kosik or tesco since 2026-11-08, section C9b of
+    RUN-STEPS.md) with the plan's lines for that shop. TSV columns: id, qty, line_price."""
     p = os.path.join(run_dir(rid), 'options.json')
     doc = load(p)
     o = next((x for x in doc['options'] if x['id'] == oid), None)
@@ -823,7 +944,7 @@ def cmd_cart(rid, oid, tsv):
     planned = o['cost_regular']
     total, missing, lines = 0.0, [], []
     for it in o['items']:
-        if it['shop'] != 'rohlik':
+        if it['shop'] != shop:
             continue
         x = rows.get(str(it.get('product_id')))
         if not x:
@@ -835,7 +956,7 @@ def cmd_cart(rid, oid, tsv):
             missing.append('%s: cart has %s, plan %s' % (it['name'], x.get('qty'), it['packs']))
         lines.append((it, lp))
         total += lp or 0
-    plan_part = sum(it['cost'] for it in o['items'] if it['shop'] == 'rohlik')
+    plan_part = sum(it['cost'] for it in o['items'] if it['shop'] == shop)
     diff = (total - plan_part) / plan_part * 100 if plan_part else 0
     limit = planner.num(((load_req(rid).get('rules') or {}).get('replan_if_cart_off_pct'))) or 10
     replan = abs(diff) > limit
@@ -845,7 +966,7 @@ def cmd_cart(rid, oid, tsv):
             it['price_label'] = 'cart'
     o['cost_regular'] = planner.r(sum(it['cost'] for it in o['items']), 2)
     o['price_seen'] = now_iso()
-    o['cart'] = dict(o.get('cart') or {}, filled=not missing, cart_total_ours=planner.r(total, 2), plan_before_cart=planner.r(plan_part, 2),
+    o['cart'] = dict(o.get('cart') or {}, shop=shop, filled=not missing, cart_total_ours=planner.r(total, 2), plan_before_cart=planner.r(plan_part, 2),
                      diff_pct=planner.r(diff, 1), problems=missing)
     if replan:
         o['notes'] += 'Cart total differs from the plan by %.1f %% (more than %s %%): costs now use the cart prices; re-plan suggested. ' % (diff, limit)
@@ -945,7 +1066,7 @@ def main(argv):
     if cmd == 'options':
         return cmd_options(a[0], float(opt(a, '--fresh-hours', FRESH_HOURS)))
     if cmd == 'cart':
-        return cmd_cart(a[0], opt(a, '--option'), opt(a, '--tsv'))
+        return cmd_cart(a[0], opt(a, '--option'), opt(a, '--tsv'), opt(a, '--shop', 'rohlik'))
     if cmd == 'result':
         return cmd_result(a[0], opt(a, '--extras'))
     if cmd == 'closed':
