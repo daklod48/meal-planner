@@ -6,10 +6,21 @@
 window.MPT = async function (terms, perTerm) {
   perTerm = perTerm || 3;
   const P = new DOMParser();
-  const out = ['term\tid\tname\tprice\tunit_price\tunit\tstatus\tpromo\tkcal\tprotein\tfat\tcarbs\tsalt'];
+  const out = ['term\tid\tname\tprice\tunit_price\tunit\tstatus\tpromo\tkcal\tprotein\tfat\tcarbs\tsalt\tsale_until'];
   const clean = v => String(v == null ? '' : v).replace(/[\t\n\r]+/g, ' ');
   const cacheOf = html => { const t = P.parseFromString(html, 'text/html').querySelector('script[type="application/discover+json"]'); return t ? t.textContent : ''; };
   const findObj = (o, key, dep) => { if (!o || typeof o !== 'object' || dep > 7) return null; if (o[key]) return o[key]; for (const k in o) { const r = findObj(o[k], key, dep + 1); if (r) return r; } return null; };
+  // 2026-11-08: the last day of a sale, if the shop's own data has one: any date-valued field whose NAME ends in end / valid /
+  // until / to (for example endDate, validTo), searched two levels deep. Field names not confirmed on a live page yet
+  // (RUN-STEPS D8); empty when nothing is found, never a guess. cook.py turns it into sale_until (YYYY-MM-DD).
+  const findEnd = (o, depth) => {
+    if (!o || typeof o !== 'object' || (depth || 0) > 2) return '';
+    for (const [k, v] of Object.entries(o)) {
+      if (/(end|valid|until|to)(date|time|at)?$/i.test(k) && typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0, 10);
+    }
+    for (const v of Object.values(o)) { const f = findEnd(v, (depth || 0) + 1); if (f) return f; }
+    return '';
+  };
   const num = s => { const m = String(s || '').replace(',', '.').match(/[\d.]+/); return m ? m[0] : ''; };
   for (const t of terms) {
     let s;
@@ -34,7 +45,7 @@ window.MPT = async function (terms, perTerm) {
       } catch (e) { n.err = 1; }
       const promo = (p.promotions || []).map(x => (x.description || x.promotionType || '')).join(' / ');
       out.push([t, id, p.title, (p.price || {}).actual, (p.price || {}).unitPrice, (p.price || {}).unitOfMeasure, p.status, promo,
-        n.kcal ?? '', n.protein ?? '', n.fat ?? '', n.carbs ?? '', n.salt ?? ''].map(clean).join('\t'));
+        n.kcal ?? '', n.protein ?? '', n.fat ?? '', n.carbs ?? '', n.salt ?? '', (p.promotions || []).length ? findEnd(p.promotions) : ''].map(clean).join('\t'));
     }
   }
   document.documentElement.setAttribute('translate', 'no');

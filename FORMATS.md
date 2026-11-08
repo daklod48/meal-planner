@@ -48,7 +48,7 @@ Weight is NOT in the profile: the newest entry of `history.json` `weighins` is t
   "wishes", "cook": {"cart_shop": "auto"|"rohlik"|"kosik"|"tesco"|"billa", "max_cook_min_per_day"},
   "order": {"max_delivery_min"}, "eatout": {"max_walk_min"},
   "targets": {"protein_g", "kcal", "mode", "protein_g_per_kg", "weight_kg"},
-  "weights", "cards": [keys the person holds], "cards_named", "accounts", "likes", "dislikes", "allergies",
+  "weights", "cards": [keys the person holds], "cards_named", "accounts", "basket_fill": {"kosik": bool, "tesco": bool} (2026-11-08; RUN-STEPS F2), "likes", "dislikes", "allergies",
   "rules": {"cart_only_never_pay": true, "replan_if_cart_off_pct": 10, "stale_days": 14, "planner_version"} }
 ```
 A request is DONE when `results/<same id>.json` exists. Claude never edits a request file.
@@ -80,6 +80,19 @@ Session 3 (2026-10-19) additions, all written by `tools/cook.py result` (Cook mo
 
 ## foods/foods.json
 `{ "version": 1, "updated", "items": [ item ] }`, item format in `tools/foods.py --help`. Prices in CZK; nutrition per 100 g; `nutrition_label` exact/table/estimate/none; `price_history` keeps every older price.
+
+Sale fields of an item (2026-11-08, written by `tools/cook.py ingest`, checked by `foods.py`): `regular_price` (CZK before the sale; only when above `price`, else null), `sale_until` ("YYYY-MM-DD", the last day as the source gave it: Rohlík `prices.saleValidTill`, Košík/Tesco page data or promotion text, kupi.cz words such as "zítra končí" counted from the read time; null when the source does not say, never a guess), `sale_source` (text: where the sale data came from; Rohlík "-10 % pro vás" is labelled as the reading account's own price), `search_name` (kupi.cz items: the product name without the leaflet suffix).
+
+## The shopping list inside a result (2026-11-08, planner 1.3)
+Each Cook option holds ONE product per food per shop (and per way of buying: online or leaflet), the best by `planner.rank_products`; an online option never holds a leaflet price. Option: `energy_topup` (bool: the second basket pass was used, see HOW-IT-WORKS 9.2), `food_cost` (CZK of the food when an online order is below its minimum; `cost_regular` is then the minimum). Every item (line) adds:
+```
+"search": exact product name to search in that shop, "pack_g", "unit", "pieces", "price": regular price of one pack, "in_stock",
+"regular_price", "sale_pct", "sale_until", "sale_source"   (null when the product is not on sale or the source does not say),
+"sold_out_instead": [{"id", "name"}]   (better-ranked products of the same food that were sold out when read),
+"backup": null | {"id", "name", "search", "url", "pack_g", "unit", "price", "packs", "cost", "cost_diff", "protein_diff_g", "sale_pct", "sale_until"}
+```
+`backup` = the best other product of the same food in the same shop, in stock, bought the same way (`planner.alternatives`); `packs` = enough to give at least the line's protein (or kcal); `cost_diff` and `protein_diff_g` against the line (`planner.backup_line`). null = no other product found (never invented). The app shows the list open on every option and copies it as plain text.
+`cart` after `cook.py cart --shop kosik|tesco` (section F2) has `shop` set to that shop.
 
 ## shops/shops.json (written in session 2, 19/10/2026)
 ```

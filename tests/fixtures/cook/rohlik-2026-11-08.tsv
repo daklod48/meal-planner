@@ -1,0 +1,13 @@
+term	id	name	price	original_price	amount	in_stock	kcal	protein	fat	carbs	salt	sale_until	sale_text
+tvaroh odtučněný	1469745	Miil Tvaroh odtučněný	16.11	17.9	250 g	true	66	12	0.2	4.1	0.1		-10 % pro vás
+tvaroh odtučněný	1469746	Miil Tvaroh polotučný	17.91	19.9	250 g	true	94	11	4.1	3.4	0.1		-10 % pro vás
+tvaroh odtučněný	1303581	Milko Tvaroh měkký odtučněný	25.9		250 g	true	67	12	0.5	4	0.1		
+tvaroh odtučněný	712393	Milko BIO Tvaroh měkký odtučněný	29.61	32.9	250 g	true	67	12	0.5	4	0.1		-10 % pro vás
+ovesné vločky	1290335	Emco vločky ovesné jemné s vlákninou	27.9	30.9	500 g	true	354	14	5.1	55	0.01	2026-12-31T23:59:00+01:00	
+ovesné vločky	1289229	Emco vločky ovesné jemné	27.9	30.9	500 g	true	367	14	6.4	58	0.01	2026-12-31T23:59:00+01:00	
+ovesné vločky	1454580	Yutto Celozrnné ovesné vločky extra jemné	10.71	11.9	500 g	true	361	13	6.9	68	0.01		-10 % pro vás
+ovesné vločky	1454579	Yutto Celozrnné ovesné vločky	10.71	11.9	500 g	true	361	13	6.9	68	0.01		-10 % pro vás
+rýže dlouhozrnná	1454459	Kitchin Rýže jasmínová	22.41	24.9	500 g	true	352	8.5	0.5	78	0.01		-10 % pro vás
+rýže dlouhozrnná	1454462	Kitchin Rýže dlouhozrnná	26.91	29.9	1 kg	true	353	7.9	0.5	78	0.01		-10 % pro vás
+rýže dlouhozrnná	1454458	Kitchin Rýže basmati	26.91	29.9	500 g	true	362	9	0.5	79	0.01		-10 % pro vás
+rýže dlouhozrnná	1307453	Vitana Rýže loupaná ve varných sáčcích	59.9	69.9	0,8 kg	true	348	8.7	0.4	76.1	0.01	2027-01-04T23:59:00+01:00	

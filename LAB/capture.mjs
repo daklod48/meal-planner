@@ -38,6 +38,9 @@ async function audit(page) {
 
 for (const [label, vp] of [['phone', { width: 390, height: 844 }], ['laptop', { width: 1440, height: 900 }]]) {
   const ctx = await browser.newContext({ viewport: vp, deviceScaleFactor: label === 'phone' ? 2 : 1, locale: 'en-GB', timezoneId: 'Europe/Prague' });
+  // never the live Firebase project (2026-11-08): practice backend, Google's servers refused
+  await ctx.addInitScript('window.__MP_TEST__ = Object.assign(window.__MP_TEST__ || {}, { forceLocal: true });');
+  await ctx.route(/googleapis\.com|firebaseapp\.com|firebaseio\.com/, r => r.abort());
   const page = await ctx.newPage();
   const errors = []; let bytes = 0;
   page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') errors.push(m.text()); });

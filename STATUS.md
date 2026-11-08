@@ -1,8 +1,9 @@
-# STATUS (2026-11-07)
-- State: code pushed to the public repo https://github.com/daklod48/meal-planner (branch main); app runs in practice mode until the Firebase config is pasted.
-- Last commit: this one, "STATUS: pushed, Pages pending" (before it: merge d6fe5e4 with the repo's Initial commit; 11818bb included).
-- Live link: https://daklod48.github.io/meal-planner/ NOT live yet: GitHub Pages is not switched on (the session's proxy refuses the Pages API); not checkable from here (github.io blocked).
-- Lab score: run 0 46/80, run 1 54/80 (kept). Tags lab-run-00 / lab-run-01 exist locally only (the proxy refuses tag pushes, HTTP 403).
-- Tests: all pass (1,401 original + t_web 49 / 51, t_rules 23, t_publish 22); publish check OK before the push (16 commits).
-- Owner steps: (1) repo Settings > Pages > Source: Deploy from a branch > Branch: main, folder / (root) > Save; (2) FIREBASE-SETUP.md steps 1 to 6; (3) add your e-mail and Windows user name to the local data/share-forbid.txt.
-- Next: after (1), open the link on phone and laptop (FIREBASE-SETUP.md step 8); after (2), paste the config and push; then lab run a, b or c.
+# STATUS (2026-11-08)
+- State: shopping list round done on branch `shopping-list`, pull request https://github.com/daklod48/meal-planner/pull/1 open against main; main itself unchanged since 98e201d.
+- Live link: https://daklod48.github.io/meal-planner/ (Pages and Firebase live since 07/11; this round goes live when the PR is merged).
+- Lab score: run 0 46/80, run 1 54/80 (kept). This round was owner feedback, not a Lab run.
+- Tests: all pass on the branch: 1,401 original checks (one t_cook check reworded to the new 40 % rule), t_list 21 (new), t_web 60 / 62 emulators, t_rules 23, t_publish 22; publish check OK.
+- Owner step 1: review and merge the PR (laptop chat), then look at the live demo: Requests and results > the result > the Rohlík card under "The other options".
+- Owner step 2 (cleanup, 2 min): a test run on 08/11 reached the LIVE Firebase project before a guard existed. Firebase console > Authentication > Users: delete the 3 users whose e-mail ends in @example.test (created 8 Nov 2026), then Firestore Database > Data > spaces: delete the documents named by their User UIDs. One anonymous demo account from that afternoon is mine too; it looks like any visitor's demo, so leaving it is fine (it costs nothing). Nothing personal; guard now in place.
+- Owner step 3: on the first real laptop run, check RUN-STEPS D8 and F2 (Košík/Tesco sale field names and basket button names were written without access to those sites).
+- Next: lab run a, b or c as the owner chooses.

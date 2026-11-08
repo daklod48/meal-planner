@@ -131,6 +131,17 @@ def check(item):
         bad.append('price_label must be online, cart, leaflet or last_known')
     if parse_time(it.get('seen')) is None:
         bad.append('seen must be a date-time with time zone, e.g. 2026-10-19T00:20:00+02:00')
+    # 2026-11-08: sale facts as the shop gave them. Unknown stays null; a "regular" price that is not above the price is no sale.
+    if it.get('regular_price') is not None:
+        if not isnum(it['regular_price']) or it['regular_price'] <= 0:
+            bad.append('regular_price must be a number above 0 or null')
+        elif isnum(p) and it['regular_price'] <= p:
+            warn.append('regular_price %s is not above the price %s: not a sale, dropped' % (it['regular_price'], p))
+            it['regular_price'] = None
+    if it.get('sale_until') is not None and not re.match(r'^\d{4}-\d{2}-\d{2}$', str(it['sale_until'])):
+        bad.append('sale_until must be YYYY-MM-DD or null (unknown is null, never a guess)')
+    if it.get('regular_price') is None and it.get('sale_until') is not None and not it.get('loyalty'):
+        it['sale_until'] = None
     if it.get('url') is not None and not re.match(r'^https?://', str(it['url'])):
         bad.append('url must start with http')
     if expect:

@@ -205,7 +205,17 @@ window.MPI18N = {
     ip_under_budget: 'Within your budget of {b} CZK ({x} CZK to spare).', ip_over_budget: 'Over your budget of {b} CZK by {x} CZK.',
     ip_list: 'Shopping list ({n} items)', ip_card: 'card price', ip_others: 'Other shops:', ip_short: 'does not cover the targets',
     ip_honest: 'Estimate made in your browser from {n} prices read on {date}, not checked today; whole packs, no vegetables rule, no recipes, no cart. Send to Claude for the full plan with today\'s prices.',
-    ip_need_targets: 'Fill in your profile (body and weight) to see an estimate.', ip_no_prices: 'No prices in your account yet. After Claude\'s first run, an estimate appears here at once for every later plan.'
+    ip_need_targets: 'Fill in your profile (body and weight) to see an estimate.', ip_no_prices: 'No prices in your account yet. After Claude\'s first run, an estimate appears here at once for every later plan.',
+    // 2026-11-08: the shopping list on every option
+    not_known: 'not known', pack_pcs: '{n} pieces', per_pack: '{p} a pack', line_total: '{c} in total', with_card: '{c} with {card}',
+    sale_line: 'On sale: {pct} % off (regular {reg}),', sale_line_short: 'On sale: {pct} % off,', sale_until: 'until {d}', sale_until_unknown: 'sale end not known',
+    sold_out_first: 'First choice {name} was sold out when the prices were read.', backup_if_out: 'If it is out:', backup_none: 'No other product of this food was found in this shop.',
+    protein_word: 'protein', diff_less: '{v} less', same_price: 'same price', same_protein: 'same protein', shopping_list: 'Shopping list', dish_list: 'What to order', list_total: 'Total: {c}',
+    cart_filled_line: 'Claude put these products in your cart. You only pay; Claude never pays or presses Order.',
+    list_copied: 'Shopping list copied. Paste it anywhere.', recipes_n: 'Recipes ({n})', copy_list: 'Copy shopping list', open_cart_pay: 'Open the filled cart: just pay',
+    picked_list: 'Picked: {label}. Your shopping list is below.', other_options: 'The other options ({n})',
+    basket_fill_gist: 'Baskets Claude may fill for you in Chrome (you must be signed in on that shop in Chrome on the computer that runs Claude). Claude only adds the shopping list; it never pays or presses Order.',
+    basket_fill_kosik: 'Fill my Košík basket', basket_fill_tesco: 'Fill my Tesco basket'
   },
   cs: {
     app_name: 'Plánovač jídla',
@@ -281,7 +291,7 @@ window.MPI18N = {
     three_options: 'Tři možnosti', pick_cheapest: 'Nejlevnější', pick_fastest: 'Nejrychleji k cíli', pick_balance: 'Nejlepší poměr', pick_cart: 'Ve vašem košíku (mimo tři nejlepší)',
     all_options: 'Vše nalezené ({n})', col_option: 'Možnost', col_score: 'Skóre', col_cost_day: 'Zaplatíte denně', col_without_card: 'Bez karty denně', col_protein: 'Bílkoviny denně', col_kcal: 'kcal denně',
     col_p100: 'Bílkoviny za 100 Kč', col_minutes: 'Minut denně', col_distance: 'Vzdálenost', col_label: 'Výživa podle',
-    score_parts: 'cena {a} · cíl {b} · chuť {c} · čas {d}', score_how: 'Skóre 0–100 = cena {a} % + rychlost k cíli {b} % + chuť {c} % + čas {d} % (váhy změníte v Nastavení).',
+    score_parts: 'cena {a} · cíl {b} · chuť {c} · čas {d}', score_how: 'Skóre 0 až 100 = cena {a} % + rychlost k cíli {b} % + chuť {c} % + čas {d} % (váhy změníte v Nastavení).',
 'kind_cook-online': 'Vaření, online obchod', 'kind_cook-shop': 'Vaření, obchod osobně', 'kind_cook-mixed': 'Vaření, online + jeden obchod pěšky', kind_order: 'Objednat online', kind_eatout: 'Jíst venku', kind_other: 'Jiné',
     label_exact: 'etiketa obchodu (přesně)', label_table: 'hodnota z tabulek potravin', label_estimate: 'odhad', label_none: 'bez výživových hodnot',
     flag_incomplete: 'neúplné: chybí cena, minuty nebo id, nehodnoceno', flag_other: 'zkontrolujte tuto možnost', flag_over_budget: 'nad rozpočet', flag_protein_short: 'bílkovin o více než 10 % méně', flag_kcal_over: 'kalorií o více než 10 % víc', flag_kcal_short: 'kalorií o více než 10 % méně',
@@ -412,6 +422,16 @@ window.MPI18N = {
     ip_under_budget: 'V rámci rozpočtu {b} Kč (zbývá {x} Kč).', ip_over_budget: 'Nad rozpočtem {b} Kč o {x} Kč.',
     ip_list: 'Nákupní seznam (položky: {n})', ip_card: 'cena s kartou', ip_others: 'Další obchody:', ip_short: 'nepokryje cíle',
     ip_honest: 'Odhad spočítaný ve vašem prohlížeči z {n} cen přečtených {date}, dnes neověřených; celá balení, bez pravidla zeleniny, bez receptů, bez košíku. Pro úplný plán s dnešními cenami pošlete požadavek Claudovi.',
-    ip_need_targets: 'Vyplňte profil (tělo a váhu), aby se ukázal odhad.', ip_no_prices: 'V účtu zatím nejsou žádné ceny. Po prvním běhu Clauda se tu odhad objeví hned u každého dalšího plánu.'
+    ip_need_targets: 'Vyplňte profil (tělo a váhu), aby se ukázal odhad.', ip_no_prices: 'V účtu zatím nejsou žádné ceny. Po prvním běhu Clauda se tu odhad objeví hned u každého dalšího plánu.',
+    // 2026-11-08: nákupní seznam u každé možnosti
+    not_known: 'neznámé', pack_pcs: '{n} kusů', per_pack: '{p} za balení', line_total: 'celkem {c}', with_card: '{c} s kartou {card}',
+    sale_line: 'Ve slevě o {pct} % (běžně {reg}),', sale_line_short: 'Ve slevě o {pct} %,', sale_until: 'do {d}', sale_until_unknown: 'konec slevy neznámý',
+    sold_out_first: 'První volba {name} byla při čtení cen vyprodaná.', backup_if_out: 'Když dojde:', backup_none: 'Jiný výrobek této potraviny jsme v tomto obchodě nenašli.',
+    protein_word: 'bílkovin', diff_less: 'o {v} méně', same_price: 'stejná cena', same_protein: 'stejně bílkovin', shopping_list: 'Nákupní seznam', dish_list: 'Co objednat', list_total: 'Celkem: {c}',
+    cart_filled_line: 'Claude vložil tyto výrobky do vašeho košíku. Vy jen zaplatíte; Claude nikdy neplatí ani nemačká Objednat.',
+    list_copied: 'Nákupní seznam zkopírován. Vložte ho kamkoli.', recipes_n: 'Recepty ({n})', copy_list: 'Kopírovat nákupní seznam', open_cart_pay: 'Otevřít naplněný košík: jen zaplatit',
+    picked_list: 'Vybráno: {label}. Nákupní seznam je níže.', other_options: 'Další možnosti ({n})',
+    basket_fill_gist: 'Košíky, které vám Claude smí naplnit v Chromu (na tom obchodě musíte být v Chromu přihlášeni na počítači, kde běží Claude). Claude jen vloží nákupní seznam; nikdy neplatí ani nemačká Objednat.',
+    basket_fill_kosik: 'Naplnit můj košík na Košíku', basket_fill_tesco: 'Naplnit můj košík na Tescu'
   }
 };

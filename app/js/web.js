@@ -362,8 +362,10 @@
     if (!pw) { setMsg(t('web_need_pw')); f.password.focus(); return; }
     authBusy = true; setMsg(t('web_working'), true);
     var p = screen === 'keep' ? B.keepDemo(email, pw, name) : screen === 'signup' ? B.signUp(email, pw, name) : B.signIn(email, pw);
-    p.then(function () {
+    p.then(function (u) {
       authBusy = false; authMsg = '';
+      // the new account is known before the redraw (2026-11-08: the header could still say "Demo account" for a moment)
+      if (screen === 'keep' && u && u.uid) user = u;
       if (screen === 'keep') { screen = 'app'; A().afterLoad(); A().showToast(t('web_keep_done')); }
     }, function (err) { authBusy = false; setMsg(errText(err)); var b = f.querySelector('[type=submit]'); if (b) b.disabled = false; });
   });

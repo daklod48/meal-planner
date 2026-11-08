@@ -34,12 +34,19 @@ const URL0 = `http://127.0.0.1:${server.address().port}/`;
 
 const browser = await chromium.launch({ env: { ...process.env, LC_ALL: 'C.UTF-8' } });
 const ctx = await browser.newContext({ locale: 'en-GB', timezoneId: 'Europe/Prague' });
+await ctx.grantPermissions(['clipboard-read', 'clipboard-write']);
 if (FB) {
   // The real Firebase code path, pointed at the local emulators (a demo- project never reaches Google).
   await ctx.route('**/app/js/firebase-config.js', r => r.fulfill({ contentType: 'text/javascript', body:
     "window.MP_FIREBASE_CONFIG = { apiKey: 'demo-key', authDomain: 'demo-meal-planner.firebaseapp.com', projectId: 'demo-meal-planner', appId: '1:1:web:1' };" +
     "window.__MP_TEST__ = { emulators: { auth: 9099, firestore: 8085 } };" }));
 }
+// 2026-11-08: since the owner's Firebase config is in app/js/firebase-config.js, index.html talks to the LIVE project.
+// The practice run must never do that: force the practice backend and refuse every request to Google's servers
+// (one run on 08/11 created test accounts in the live project before this guard existed).
+const googleCalls = [];
+await ctx.route(/googleapis\.com|firebaseapp\.com|firebaseio\.com/, r => { if (!FB || !/127\.0\.0\.1|localhost/.test(r.request().url())) { googleCalls.push(r.request().url()); return r.abort(); } return r.continue(); });
+if (!FB) await ctx.addInitScript('window.__MP_TEST__ = Object.assign(window.__MP_TEST__ || {}, { forceLocal: true });');
 const errors = [];
 function watch(p, tag) {
   // Firebase answers a wrong password or a taken e-mail with HTTP 400; Chrome logs that as "Failed to load resource".
@@ -174,9 +181,37 @@ try {
   const rt = await text('#main');
   ok('demo: the Cook result opens with the three picks', rt.includes('Cheapest') && rt.includes('Fastest to your goal') && rt.includes('Best balance'));
   ok('demo: maths check agrees with tools/planner.py', rt.includes('the app and tools/planner.py give the same scores'));
-  ok('demo: prices are not shown as old', (await page.$$('#main tr.stale')).length === 0);
+  // 2026-11-08: the demo's Rohlík prices were read on 08/11 (connector), the other shops on 19/10: the app says so honestly
+  // (before: every price from 19/10, none old). Rohlík row fresh, the 19/10 rows flagged "older than 14 days".
+  const staleRows = await page.$$eval('#main table tr', trs => trs.map(tr => ({ t: tr.textContent, stale: tr.classList.contains('stale') })));
+  ok('demo: prices read on 19/10 are flagged as old, with their date (honest, not moved to today)', staleRows.some(x => /Tesco/.test(x.t) && x.stale && /price seen/.test(x.t)), staleRows.map(x => x.stale + ' ' + x.t.slice(0, 30)));
+
+  // ===== 2026-11-08: the shopping list is the result (owner feedback 08/11) =====
+  const main = await text('#main');
+  ok('result: no dash characters anywhere on the result screen', !/[–—]/.test(main), (main.match(/.{20}[–—].{20}/g) || []).slice(0, 3));
+  ok('result: no dangling "min a day ·" with nothing after it', !/min a day · (\n|$|<)/.test(await page.innerHTML('#main')));
+  const pickIds = await page.$$eval('.picks .pick button[data-act="pick"]', b => b.map(x => x.dataset.opt));
+  ok('result: an option that wins two picks is shown once, with both labels', new Set(pickIds).size === pickIds.length && (await page.$$('.picks .pick h4 .picklabel')).length === 3, pickIds);
+  const lists = await page.$$eval('.picks .pick', cards => cards.map(c => { const l = c.querySelector('.slist'); return !!l && !l.closest('details') && l.offsetParent !== null && l.querySelectorAll('.sl-row').length; }));
+  ok('result: every pick card shows its shopping list open (not folded), one row per product', lists.length > 0 && lists.every(n => n > 0), lists);
+  ok('result: every other option is a card too, its list inside', (await page.$$('.others details.pick .slist')).length >= 1);
+  await page.click('.others details.pick summary >> text=Rohlík');
+  const ro = await page.$eval('.others details.pick[open]', d => d.textContent);
+  ok('Rohlík list: the exact product to search, pack, price and a backup with CZK and protein difference', /Kitchin Rýže|Yutto|Emco|Miil/.test(ro) && /If it is out:/.test(ro) && /(\+|less)[^·]*CZK/.test(ro) && /g protein/.test(ro), ro.slice(0, 600));
+  ok('Rohlík list: a real sale end from the connector ("until 31. 12. 2026") or "sale end not known", never a guess', /until 31\. 12\. 2026|until 4\. 1\. 2027|sale end not known/.test(ro));
+  await page.click('.picks .pick button[data-act="pick"]');
+  const fl = await text('.bar.flash');
+  ok('Pick this: "Picked: <option>. Your shopping list is below." with Copy shopping list (no "order on the shop site yourself")', /^Picked: .+\. Your shopping list is below\./.test(fl.trim()) && fl.includes('Copy shopping list') && !/Order on the shop site yourself/.test(fl), fl);
+  await page.click('.bar.flash button[data-act="copy-list"]');
+  await page.waitForTimeout(300);
+  const clip = await page.evaluate(() => navigator.clipboard.readText().catch(() => ''));
+  ok('Copy shopping list: plain text, one line per product with packs and price, a link, and the total', /^Shopping list: /.test(clip) && /\n- \d+ × /.test(clip) && /https:\/\//.test(clip) && /Total: [\d,.]+ CZK/.test(clip) && !/<[a-z]/i.test(clip), clip.slice(0, 300));
+  await page.click('button[data-lang="cs"]');
+  ok('Czech: "Nákupní seznam", "Kopírovat nákupní seznam"', (await text('#main')).includes('Nákupní seznam') && (await text('#main')).includes('Kopírovat nákupní seznam'));
+  await page.click('button[data-lang="en"]');
 
   // ===== lab run 1: instant estimate, phone tab bar, badge =====
+  await settle();  // the plan picked above is saved first; the estimate itself must add nothing
   await page.click('#nav button[data-view="plan"]');
   await page.click('#mode-cook');
   const est = await page.evaluate(() => {
@@ -223,7 +258,7 @@ try {
   // ===== keep the demo as a real account =====
   await page.click('#acct button[data-act="web-keep"]');
   await typeInto('#web-email', EMAIL3); await typeInto('#web-pw', 'keep-me-1'); await page.click('#web-auth [type=submit]');
-  ok('keep: the demo becomes an account with an e-mail, data kept', await until(() => /New plan for Tomáš Dvořák/.test(document.getElementById('main').textContent)) && (await text('#acct')).includes(EMAIL3), await text('#acct'));
+  ok('keep: the demo becomes an account with an e-mail, data kept', await until(() => /New plan for Tomáš Dvořák/.test(document.getElementById('main').textContent)) && (await text('#acct')).includes(EMAIL3), (await text('#acct')) + ' // ' + (await text('#main')).slice(0, 300));
   await page.click('button[data-act="web-signout"]');
   await until(() => !!document.querySelector('button[data-act="web-demo"]'));
   await page.click('button[data-to="signin"]');
@@ -249,6 +284,7 @@ try {
   await page.click('button[data-to="signin"]');
   ok('390 px: sign-in page has no sideways scroll', await noSideScroll());
   ok('no console errors', errors.length === 0, errors);
+  ok('no request reached Google\'s live servers (practice run forced local; emulator run stays on this machine)', googleCalls.length === 0, googleCalls.slice(0, 3));
 } catch (e) {
   fail++; log.push('FAIL exception: ' + (e && e.stack || e).toString().slice(0, 600));
 }

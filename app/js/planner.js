@@ -6,7 +6,8 @@
   else root.MPPlanner = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  var VERSION = '1.2';  // 1.2 (2026-11-05): targets from the DRI (protein RDA, energy EER) instead of fixed 1.6 g/kg and Mifflin x PAL
+  var VERSION = '1.3';  // 1.3 (2026-11-08): energy top-up pass; best and backup product per category
+  // 1.2:  // 1.2 (2026-11-05): targets from the DRI (protein RDA, energy EER) instead of fixed 1.6 g/kg and Mifflin x PAL
   var EPS = 1e-12;
 
   // Round half away from zero to d decimals. Python twin: r(x, d).
@@ -171,6 +172,57 @@
     return out;
   }
 
+  /* planner 1.3 (2026-11-08): the shopping list compares every product of one food in one shop.
+     rankProducts: every product with a price, pack and protein/kcal, best value first, where value = share of the need one
+     pack covers (protein share + kcal share) per CZK you pay (the basket's own measure), ties by id. Sold-out products are
+     ranked too and marked, so a list can say "the first choice was sold out". Python twin: rank_products(). */
+  function rankProducts(foods, need, cards) {
+    var nP = num((need || {}).protein_g) || 0, nK = num((need || {}).kcal) || 0, out = [], i;
+    var list = (foods || []).filter(function (f) { return f && typeof f.id === 'string' && f.id !== '' && num(f.price) > 0 && num(f.pack_g) > 0 && f.per100g && num(f.per100g.protein) !== null && num(f.per100g.kcal) !== null; });
+    for (i = 0; i < list.length; i++) {
+      var f = list[i], ep = effectivePrice(f, cards), g = num(f.pack_g);
+      var p = g * num(f.per100g.protein) / 100, k = g * num(f.per100g.kcal) / 100;
+      var v = ((nP > 0 ? p / nP : 0) + (nK > 0 ? k / nK : 0)) / ep.price;
+      out.push({ id: f.id, value: r(v * 100000, 6), in_stock: f.in_stock !== false, price: ep.price, protein_g: r(p, 2), kcal: r(k, 2) });
+    }
+    out.sort(function (a, b) { return b.value - a.value || (a.id < b.id ? -1 : (a.id > b.id ? 1 : 0)); });
+    return out;
+  }
+  /* The backup for a product the plan uses: the best-ranked OTHER product of the same food that is in stock; and the
+     sold-out products that ranked above the chosen one (the plan had to skip them). Python twin: alternatives(). */
+  function alternatives(foods, chosenId, need, cards) {
+    var ranked = rankProducts(foods, need, cards), backup = null, soldAbove = [], seen = false, i;
+    for (i = 0; i < ranked.length; i++) {
+      var x = ranked[i];
+      if (x.id === chosenId) { seen = true; continue; }
+      if (!x.in_stock) { if (!seen) soldAbove.push(x.id); continue; }
+      if (backup === null) backup = x.id;
+    }
+    return { ranked: ranked.map(function (x) { return x.id; }), backup: backup, sold_out_above: soldAbove };
+  }
+  /* What the backup costs for the same job: enough packs to give at least the chosen line's protein (or its kcal for a food
+     without protein), and the difference in CZK you pay and in grams of protein. Python twin: backup_line(). */
+  function backupLine(line, food, cards) {
+    var ep = effectivePrice(food, cards), g = num(food.pack_g), n = food.per100g || {};
+    var p = g * (num(n.protein) || 0) / 100, k = g * (num(n.kcal) || 0) / 100;
+    var lp = num(line.protein_g) || 0, lk = num(line.kcal) || 0, lc = num(line.cost) || 0, packs;
+    if (lp > 0 && p > 0) packs = Math.ceil(lp / p - EPS);
+    else if (k > 0) packs = Math.ceil(lk / k - EPS);
+    else packs = 1;
+    if (packs < 1) packs = 1;
+    return { id: food.id, packs: packs, cost: r(packs * ep.price, 2), protein_g: r(packs * p, 2), kcal: r(packs * k, 2),
+      cost_diff: r(packs * ep.price - lc, 2), protein_diff_g: r(packs * p - lp, 1) };
+  }
+  /* Sale facts of one product as the shop gave them: regular price, % off, the last day (YYYY-MM-DD) or null when the
+     source does not say, and whether the sale still runs on asOf (null = not known). Python twin: sale_info(). */
+  function saleInfo(food, asOf) {
+    var price = num(food && food.price), reg = num(food && food.regular_price);
+    if (price === null || reg === null || reg <= price) return null;
+    var until = typeof food.sale_until === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(food.sale_until) ? food.sale_until : null;
+    return { regular_price: r(reg, 2), price: r(price, 2), sale_pct: r((reg - price) / reg * 100, 0), sale_until: until,
+      active: until === null || !asOf ? null : asOf <= until };
+  }
+
   // Budget per day from an amount and a period. A month = 365/12 days.
   function perDay(amount, period) {
     var a = num(amount); if (a === null) return null;
@@ -225,21 +277,37 @@
       if (c === null || c < 1) c = 1;
       if (hard !== null && hard < c) c = hard;
       xi.cap = c;
+      // planner 1.3: the cap of the second pass. Energy foods (protein gives less than half their kcal, 4 kcal per g) may go up
+      // to 40 % of the kcal need; lean protein foods (tvaroh, chicken) keep their protein cap.
+      var c2 = xi.k > 0 && nK > 0 && 4 * xi.p < 0.5 * xi.k ? Math.floor(share * nK / xi.k) : c;
+      if (c2 < c) c2 = c;
+      if (hard !== null && hard < c2) c2 = hard;
+      xi.cap2 = c2;
     }
-    for (step = 0; step < 2000; step++) {
-      if (remP <= 0 && remK <= 0) break;
-      var best = null, bestVal = 0;
-      for (i = 0; i < list.length; i++) {
-        var id = list[i].id, x = info[id];
-        if (counts[id] >= x.cap) continue;
-        var gp = remP > 0 ? Math.min(x.p, remP) : 0, gk = remK > 0 ? Math.min(x.k, remK) : 0;
-        var overK = remK > 0 ? Math.max(0, x.k - remK) : x.k; // v1.1 (19/10): kcal beyond the target counts against a pack
-        var v = ((nP > 0 ? gp / nP : 0) + (nK > 0 ? gk / nK : 0) - (nK > 0 ? overK / nK : 0)) / x.price;
-        if (v > bestVal + EPS) { best = id; bestVal = v; }
+    function fill(capKey) {
+      for (step = 0; step < 2000; step++) {
+        if (remP <= 0 && remK <= 0) break;
+        var best = null, bestVal = 0;
+        for (i = 0; i < list.length; i++) {
+          var id = list[i].id, x = info[id];
+          if (counts[id] >= x[capKey]) continue;
+          var gp = remP > 0 ? Math.min(x.p, remP) : 0, gk = remK > 0 ? Math.min(x.k, remK) : 0;
+          var overK = remK > 0 ? Math.max(0, x.k - remK) : x.k; // v1.1 (19/10): kcal beyond the target counts against a pack
+          var v = ((nP > 0 ? gp / nP : 0) + (nK > 0 ? gk / nK : 0) - (nK > 0 ? overK / nK : 0)) / x.price;
+          if (v > bestVal + EPS) { best = id; bestVal = v; }
+        }
+        if (best === null) break;
+        counts[best] += 1; remP -= info[best].p; remK -= info[best].k;
       }
-      if (best === null) break;
-      counts[best] += 1; remP -= info[best].p; remK -= info[best].k;
     }
+    fill('cap');
+    /* planner 1.3 (2026-11-08): energy top-up. The cap above takes the SMALLER of the protein and the energy share, so with
+       DRI protein (0.8 g/kg) next to a high energy need, even oats or rice stop at their protein share and the plan stays short
+       on energy (the demo: 1,445 of 3,545 kcal a day). When energy is still short after the first pass AND protein is already
+       covered, a second pass allows each energy food up to 40 % of the ENERGY need: variety still holds for energy, and protein
+       above the RDA is safe. While protein is still short the protein caps stay (no lentils above 40 % of the protein). */
+    var topup = false;
+    if (remK > EPS && remP <= 0 && nK > 0) { var before = remK; fill('cap2'); topup = remK < before - EPS; }  // only once protein is covered
     var items = [], cost = 0, costReg = 0, P = 0, K = 0;
     for (i = 0; i < list.length; i++) {
       var fid = list[i].id, c = counts[fid];
@@ -248,7 +316,7 @@
       items.push({ id: fid, name: y.name, packs: c, cap: y.cap, cost: r(c * y.price, 2), cost_regular: r(c * y.regular, 2), card_used: y.card, protein_g: r(c * y.p, 2), kcal: r(c * y.k, 2) });
       cost += c * y.price; costReg += c * y.regular; P += c * y.p; K += c * y.k;
     }
-    return { items: items, cost: r(cost, 2), cost_regular: r(costReg, 2), protein_g: r(P, 2), kcal: r(K, 2), met: remP <= 0 && remK <= 0 };
+    return { items: items, cost: r(cost, 2), cost_regular: r(costReg, 2), protein_g: r(P, 2), kcal: r(K, 2), met: remP <= 0 && remK <= 0, energy_topup: topup };
   }
 
   // Cost of a whole option for this person: regular minus the savings of the cards he holds.
@@ -343,5 +411,5 @@
 
   return { VERSION: VERSION, r: r, ageYears: ageYears, bmr: bmr, PAL: PAL, DRI: DRI, dri: dri,
     DEFAULT_WEIGHTS: DEFAULT_WEIGHTS, targets: targets, perDay: perDay, effectivePrice: effectivePrice, foodMetrics: foodMetrics,
-    basket: basket, optionCost: optionCost, score: score, goalLine: goalLine, addDays: addDays };
+    basket: basket, rankProducts: rankProducts, alternatives: alternatives, backupLine: backupLine, saleInfo: saleInfo, optionCost: optionCost, score: score, goalLine: goalLine, addDays: addDays };
 });
