@@ -179,3 +179,4 @@ details.why-targets summary { cursor: pointer; color: var(--accent); font-weight
 a.cartbtn { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
 .others { display: grid; gap: .6rem; }
 details.pick.other summary { cursor: pointer; min-height: 2.75rem; display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; }
+@media (max-width: 600px) { .toast { flex-wrap: wrap; width: calc(100% - 2rem); } .toast > span { flex: 1 1 100%; } }

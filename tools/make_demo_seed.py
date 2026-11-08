@@ -90,8 +90,13 @@ try:
             raise SystemExit('cook.py %s failed: %s %s' % (args[:2], p.stdout[-400:], p.stderr[-400:]))
         return p.stdout
 
+    # the 19/10 Rohlík fixture holds two test placeholders (ids 1111 and 2222, not real products): never in the demo,
+    # where every product is a link (the real oats and rice read on 08/11 replace them)
+    rtsv = os.path.join(tmp, 'rohlik-1019.tsv')
+    lines = open(os.path.join(FX, 'rohlik.tsv'), encoding='utf-8').read().splitlines()
+    open(rtsv, 'w', encoding='utf-8').write('\n'.join(l for l in lines if l.split('\t')[1:2] not in (['1111'], ['2222'])) + '\n')
     for src in ('rohlik', 'kosik', 'tesco', 'kupi'):
-        cook('ingest', rid, '--source', src, '--tsv', os.path.join(FX, src + '.tsv'), '--seen', SEEN)
+        cook('ingest', rid, '--source', src, '--tsv', rtsv if src == 'rohlik' else os.path.join(FX, src + '.tsv'), '--seen', SEEN)
     cook('ingest', rid, '--source', 'rohlik', '--tsv', os.path.join(FX, 'rohlik-2026-11-08.tsv'), '--seen', SEEN2)
     cook('borrow', rid)
     cook('options', rid)

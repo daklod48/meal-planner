@@ -189,10 +189,11 @@
     if (opts.focus) { var el = document.getElementById(opts.focus); if (el) { el.scrollIntoView({ block: 'center' }); el.classList.add('hl'); } }
     else window.scrollTo(0, opts.scroll || 0);
   }
-  function showToast(text, undoInfo) {
+  // extraHtml (2026-11-08): more buttons, already escaped, e.g. Copy shopping list after Pick this
+  function showToast(text, undoInfo, extraHtml) {
     toast = { text: text, undo: undoInfo };
     var el = $('#toast');
-    el.innerHTML = '<span>' + h(text) + '</span>' + (undoInfo ? ' <button type="button" data-act="undo" data-change="' + h(undoInfo) + '">' + h(t('undo')) + '</button>' : '') +
+    el.innerHTML = '<span>' + h(text) + '</span>' + (extraHtml || '') + (undoInfo ? ' <button type="button" data-act="undo" data-change="' + h(undoInfo) + '">' + h(t('undo')) + '</button>' : '') +
       ' <button type="button" class="ghost" data-act="toast-close" aria-label="' + h(t('close')) + '">' + h(t('close')) + '</button>';
     el.hidden = false;
     clearTimeout(showToast.tm); showToast.tm = setTimeout(function () { el.hidden = true; }, 9000);
@@ -714,7 +715,7 @@
     if (typeof it.pack_g === 'number') return fmt(it.pack_g >= 1000 && it.pack_g % 100 === 0 ? it.pack_g / 1000 : it.pack_g, it.pack_g >= 1000 && it.pack_g % 100 === 0 ? (it.pack_g % 1000 ? 1 : 0) : 0) + ' ' + (it.pack_g >= 1000 && it.pack_g % 100 === 0 ? (it.unit === 'ml' ? 'l' : 'kg') : (it.unit === 'ml' ? 'ml' : 'g'));
     return '';
   }
-  function signed(n, d, unit) { var v = fmt(Math.abs(n), d) + unit; return n < 0 ? t('diff_less', { v: v }) : '+' + v; }
+  function signed(n, d, unit, same) { if (Math.abs(n) < Math.pow(10, -d) / 2) return t(same); var v = fmt(Math.abs(n), d) + unit; return n < 0 ? t('diff_less', { v: v }) : '+' + v; }
   function saleText(it) {
     if (typeof it.sale_pct !== 'number' || !(it.sale_pct > 0)) return '';
     var head = typeof it.regular_price === 'number' ? t('sale_line', { pct: fmt(it.sale_pct), reg: czk(it.regular_price) }) : t('sale_line_short', { pct: fmt(it.sale_pct) });
@@ -745,8 +746,8 @@
       if (b && typeof b === 'object' && b.name) {
         var bu = safeUrl(b.url), bn = h(b.search || b.name), bits = [];
         if (b.packs) bits.push(b.packs + ' × ' + (packText(b) || ''));
-        if (typeof b.cost_diff === 'number') bits.push(signed(b.cost_diff, 2, ' CZK'));
-        if (typeof b.protein_diff_g === 'number') bits.push(signed(b.protein_diff_g, 1, ' g ' + t('protein_word')));
+        if (typeof b.cost_diff === 'number') bits.push(signed(b.cost_diff, 2, ' CZK', 'same_price'));
+        if (typeof b.protein_diff_g === 'number') bits.push(signed(b.protein_diff_g, 1, ' g ' + t('protein_word'), 'same_protein'));
         var bs = saleText(b);
         out += '<div class="sl-backup"><strong>' + h(t('backup_if_out')) + '</strong> ' + (bu ? '<a href="' + h(bu) + '" target="_blank" rel="noopener">' + bn + '</a>' : bn) +
           (bits.length ? ' · ' + h(bits.join(' · ')) : '') + (bs ? ' · ' + h(bs) : '') + '</div>';
@@ -766,7 +767,7 @@
       if (safeUrl(it.url)) line += '\n  ' + safeUrl(it.url);
       var b = it.backup;
       if (b && b.name) line += '\n  ' + t('backup_if_out') + ' ' + (b.search || b.name) + (b.packs ? ', ' + b.packs + ' × ' + (packText(b) || '') : '') +
-        (typeof b.cost_diff === 'number' ? ', ' + signed(b.cost_diff, 2, ' CZK') : '') + (typeof b.protein_diff_g === 'number' ? ', ' + signed(b.protein_diff_g, 1, ' g ' + t('protein_word')) : '') +
+        (typeof b.cost_diff === 'number' ? ', ' + signed(b.cost_diff, 2, ' CZK', 'same_price') : '') + (typeof b.protein_diff_g === 'number' ? ', ' + signed(b.protein_diff_g, 1, ' g ' + t('protein_word'), 'same_protein') : '') +
         (safeUrl(b.url) ? '\n  ' + safeUrl(b.url) : '');
       L.push(line);
     });
@@ -833,12 +834,13 @@
     var pid = St.nextCode(u.history, 'plans', 'P');
     var c = St.commit(u.profile.id, 'plan_picked', [{ file: 'history', path: 'plans#' + pid, value: { id: pid, request_id: reqId, option_id: optId, label: o.label, kind: o.kind || null,
       shop: o.shop || null, days: o.days || r.days, start_date: r.start_date, cost_per_day: x.cost_per_day, cost_total: x.cost_mine, picked_at: St.nowIso() } }]);
-    showToast(t('picked_list', { label: o.label }), c ? c.id + '|' + u.profile.id : null);
     var cartUrl = o.cart && o.cart.filled === true ? safeUrl(o.cart.url) : null;
-    var fl = h(t('picked_list', { label: o.label })) + ' <button type="button" data-act="copy-list" data-req="' + h(reqId) + '" data-opt="' + h(optId) + '">' + h(t('copy_list')) + '</button>' +
+    var btns = ' <button type="button" data-act="copy-list" data-req="' + h(reqId) + '" data-opt="' + h(optId) + '">' + h(t('copy_list')) + '</button>' +
       (cartUrl ? ' <a class="btn cartbtn" href="' + h(cartUrl) + '" target="_blank" rel="noopener">' + h(t('open_cart_pay')) + '</a>' : '');
+    var fl = h(t('picked_list', { label: o.label })) + btns;
     go('request', reqId, { flash: fl, keepBack: true, focus: 'list-' + optId });
     var od = document.getElementById('other-' + optId); if (od) { od.open = true; var li = document.getElementById('list-' + optId); if (li) li.scrollIntoView({ block: 'center' }); }
+    showToast(t('picked_list', { label: o.label }), c ? c.id + '|' + u.profile.id : null, btns);
   }
   function copyList(reqId, optId) {
     var r = S().requests[reqId], res = S().results[reqId];
