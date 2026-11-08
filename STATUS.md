@@ -1,5 +1,5 @@
 # STATUS (2026-11-08)
-- State: shopping list round done on branch `shopping-list`, pull request open against main (see below); main itself unchanged since 98e201d.
+- State: shopping list round done on branch `shopping-list`, pull request https://github.com/daklod48/meal-planner/pull/1 open against main; main itself unchanged since 98e201d.
 - Live link: https://daklod48.github.io/meal-planner/ (Pages and Firebase live since 07/11; this round goes live when the PR is merged).
 - Lab score: run 0 46/80, run 1 54/80 (kept). This round was owner feedback, not a Lab run.
 - Tests: all pass on the branch: 1,401 original checks (one t_cook check reworded to the new 40 % rule), t_list 21 (new), t_web 60 / 62 emulators, t_rules 23, t_publish 22; publish check OK.
